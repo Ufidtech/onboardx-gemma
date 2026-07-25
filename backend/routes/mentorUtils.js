@@ -60,9 +60,36 @@ function inferTrackFromMessage(message) {
   return null;
 }
 
+/**
+ * Infers the user's self-reported experience level from free text.
+ * Defaults to "beginner" when nothing is said, since that's the safer
+ * assumption for a new community member and matches learningPathService's
+ * own default.
+ */
+function inferLevelFromMessage(message) {
+  const normalizedMessage = String(message || "").toLowerCase();
+
+  const intermediateSignals = [
+    "intermediate",
+    "some experience",
+    "already know",
+    "not new to",
+    "worked with",
+    "used it before",
+    "comfortable with"
+  ];
+
+  if (intermediateSignals.some((signal) => normalizedMessage.includes(signal))) {
+    return "intermediate";
+  }
+
+  return "beginner";
+}
+
 module.exports = {
   getMentorSnapshot,
   buildMentorContext,
   checkMentorCapacity,
-  inferTrackFromMessage
+  inferTrackFromMessage,
+  inferLevelFromMessage
 };

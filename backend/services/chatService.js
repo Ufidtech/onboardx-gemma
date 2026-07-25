@@ -1,8 +1,10 @@
 const {
   buildMentorContext,
   checkMentorCapacity,
-  inferTrackFromMessage
+  inferTrackFromMessage,
+  inferLevelFromMessage
 } = require("../routes/mentorUtils");
+const { generateLearningPath } = require("./learningPathService");
 
 function extractInteractionText(interaction) {
   if (typeof interaction?.text === "string" && interaction.text.trim()) {
@@ -71,12 +73,7 @@ function buildModelInput(message) {
 
 function buildFallbackReply(message, reason = "fallback_response") {
   const track = inferTrackFromMessage(message);
-
-  const sharedActions = [
-    "Set up your environment and verify the starter app runs.",
-    "Complete the first guided exercise with mentor feedback.",
-    "Share one progress update and one blocker before the next session."
-  ];
+  const level = inferLevelFromMessage(message);
 
   if (!track) {
     return {
@@ -87,6 +84,7 @@ function buildFallbackReply(message, reason = "fallback_response") {
     };
   }
 
+  const learningPath = generateLearningPath({ track, level });
   const result = checkMentorCapacity(track);
 
   if (result.status === "success") {
@@ -94,9 +92,11 @@ function buildFallbackReply(message, reason = "fallback_response") {
       reply: `You’re matched with ${result.mentor} for ${result.track}.`,
       status: "success",
       track: result.track,
+      level: learningPath.level,
       mentor: result.mentor,
       mentorLink: result.link,
-      week1Actions: sharedActions,
+      week1Actions: learningPath.steps,
+      estimatedWeeks: learningPath.estimatedWeeks,
       source: "fallback",
       reason
     };
@@ -107,11 +107,9 @@ function buildFallbackReply(message, reason = "fallback_response") {
       "That track is currently full. Use the self-guided path below to continue, or ask again later when a seat opens.",
     status: "full",
     track,
-    week1Actions: [
-      "Work through the starter checklist at your own pace.",
-      "Document one blocker or question before the next mentor opening.",
-      "Retry the chat later to check for a newly opened seat."
-    ],
+    level: learningPath.level,
+    week1Actions: learningPath.steps,
+    estimatedWeeks: learningPath.estimatedWeeks,
     source: "fallback",
     reason
   };
@@ -192,6 +190,11 @@ function createChatService({
           };
         }
 
+        const learningPath = generateLearningPath({
+          track: functionResult.track,
+          level: inferLevelFromMessage(message)
+        });
+
         if (functionResult.status === "success") {
           logChatSource("GEMMA", "tool_call_success_response");
           return {
@@ -200,13 +203,11 @@ function createChatService({
               reply: extractInteractionText(interaction),
               status: functionResult.status,
               track: functionResult.track,
+              level: learningPath.level,
               mentor: functionResult.mentor,
               mentorLink: functionResult.link,
-              week1Actions: [
-                "Set up your environment and verify the starter app runs.",
-                "Complete the first guided exercise with mentor feedback.",
-                "Share one progress update and one blocker before the next session."
-              ],
+              week1Actions: learningPath.steps,
+              estimatedWeeks: learningPath.estimatedWeeks,
               source: "gemini",
               reason: "tool_call_success_response"
             }
@@ -220,11 +221,9 @@ function createChatService({
             reply: extractInteractionText(interaction),
             status: functionResult.status,
             track: functionResult.track,
-            week1Actions: [
-              "Work through the starter checklist at your own pace.",
-              "Document one blocker or question before the next mentor opening.",
-              "Retry the chat later to check for a newly opened seat."
-            ],
+            level: learningPath.level,
+            week1Actions: learningPath.steps,
+            estimatedWeeks: learningPath.estimatedWeeks,
             source: "gemini",
             reason: "tool_call_full_response"
           }
