@@ -1,0 +1,22 @@
+{
+  "name": "onboardx-gemma-backend",
+  "version": "1.0.0",
+  "description": "OnboardX backend API with Gemma native function calling",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "express",
+    "gemma",
+    "onboardx"
+  ],
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^2.13.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0"
+  }
+}

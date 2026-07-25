@@ -6,7 +6,11 @@ export default function MessageList({ messages, isTyping }) {
 
   // Auto-scroll to the latest message
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+    const endOfMessagesElement = endOfMessagesRef.current;
+
+    if (typeof endOfMessagesElement?.scrollIntoView === "function") {
+      endOfMessagesElement.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages, isTyping]);
 
   return (
