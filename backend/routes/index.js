@@ -2,12 +2,14 @@ const express = require("express");
 const { createHealthRouter } = require("./health");
 const { createMentorsRouter } = require("./mentors");
 const { createChatRouter } = require("./chat");
+const { createResourcesRouter } = require("./resources");
 
 function createApiRouter(deps) {
   const router = express.Router();
 
   router.use(createHealthRouter({ modelName: deps.modelName }));
   router.use(createMentorsRouter());
+  router.use(createResourcesRouter());
   router.use(
     createChatRouter({
       aiClient: deps.aiClient,

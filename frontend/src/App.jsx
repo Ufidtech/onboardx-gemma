@@ -77,6 +77,9 @@ export default function App() {
           mentorLink: data.mentorLink,
           track: data.track,
           week1Actions: data.week1Actions,
+          starterPackUrl: data.starterPackUrl
+            ? `${apiBaseUrl}${data.starterPackUrl}`
+            : undefined,
         },
       ]);
     } catch {
@@ -93,14 +96,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-200 flex justify-center items-center">
-      <div className="w-full max-w-md h-\[100dvh\] sm:h-[90vh] bg-[#efeae2] sm:rounded-lg shadow-xl flex flex-col overflow-hidden relative">
+      <div className="w-full max-w-md h-[100dvh] sm:h-[90vh] bg-[#efeae2] sm:rounded-lg shadow-xl flex flex-col overflow-hidden relative">
         <ChatHeader lastSource={lastSource} />
         <MessageList messages={messages} isTyping={isTyping} />
-        <DebugPanel
-          activeModel={activeModel}
-          lastSource={lastSource}
-          lastReason={lastReason}
-        />
+        {import.meta.env.DEV && (
+          <DebugPanel
+            activeModel={activeModel}
+            lastSource={lastSource}
+            lastReason={lastReason}
+          />
+        )}
         <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
       </div>
     </div>

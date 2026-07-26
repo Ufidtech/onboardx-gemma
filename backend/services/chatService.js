@@ -6,6 +6,11 @@ const {
 } = require("../routes/mentorUtils");
 const { generateLearningPath } = require("./learningPathService");
 
+function buildStarterPackUrl(track, level) {
+  const params = new URLSearchParams({ track, level }).toString();
+  return `/api/resources/starter-pack?${params}`;
+}
+
 function extractInteractionText(interaction) {
   if (typeof interaction?.text === "string" && interaction.text.trim()) {
     return interaction.text.trim();
@@ -52,7 +57,16 @@ function buildSystemInstruction() {
     "Do not reveal private chain-of-thought. Give a concise answer that helps the user act quickly.",
     "If the user is vague, ask exactly one clarifying question.",
     "If the user wants a track with available seats, call check_mentor_capacity.",
-    "If a track is full, recommend the self-guided path.",
+    "IMPORTANT - mentor framing: mentors are experienced community members who offer",
+    "guidance, answer questions, and point the mentee in the right direction. They are",
+    "NOT formal instructors running lessons or teaching a curriculum. Always frame a",
+    "mentor match as 'someone to talk to for guidance and advice', never as 'someone",
+    "who will teach you' or 'your instructor'. The actual learning happens through the",
+    "self-guided track content; the mentor is community support alongside it.",
+    "If check_mentor_capacity returns status 'success', that means the CURRENT user has",
+    "just been matched successfully - say so plainly and do not contradict it by talking",
+    "about remaining seat counts. If a track is full, recommend the downloadable",
+    "self-guided starter pack instead.",
     "Current mentor inventory:",
     buildMentorContext()
   ].join("\n");
@@ -104,12 +118,13 @@ function buildFallbackReply(message, reason = "fallback_response") {
 
   return {
     reply:
-      "That track is currently full. Use the self-guided path below to continue, or ask again later when a seat opens.",
+      "That track is currently full. Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.",
     status: "full",
     track,
     level: learningPath.level,
     week1Actions: learningPath.steps,
     estimatedWeeks: learningPath.estimatedWeeks,
+    starterPackUrl: buildStarterPackUrl(track, learningPath.level),
     source: "fallback",
     reason
   };
@@ -224,6 +239,7 @@ function createChatService({
             level: learningPath.level,
             week1Actions: learningPath.steps,
             estimatedWeeks: learningPath.estimatedWeeks,
+            starterPackUrl: buildStarterPackUrl(functionResult.track, learningPath.level),
             source: "gemini",
             reason: "tool_call_full_response"
           }
@@ -235,6 +251,54 @@ function createChatService({
         return {
           statusCode: 200,
           payload: buildFallbackReply(message, "empty_gemma_response_no_tool")
+        };
+      }
+
+      // Gemma answered directly without calling check_mentor_capacity this turn.
+      // Don't rely on the model choosing to call the tool every time - if we can
+      // infer a track from the message ourselves, still attach real, grounded
+      // data (mentor link or starter pack) instead of leaving the user with only
+      // whatever Gemma improvised in plain text.
+      const inferredTrack = inferTrackFromMessage(message);
+
+      if (inferredTrack) {
+        const level = inferLevelFromMessage(message);
+        const learningPath = generateLearningPath({ track: inferredTrack, level });
+        const result = checkMentorCapacity(inferredTrack);
+
+        logChatSource("GEMMA", "direct_response_grounded");
+
+        if (result.status === "success") {
+          return {
+            statusCode: 200,
+            payload: {
+              reply: extractInteractionText(interaction),
+              status: result.status,
+              track: result.track,
+              level: learningPath.level,
+              mentor: result.mentor,
+              mentorLink: result.link,
+              week1Actions: learningPath.steps,
+              estimatedWeeks: learningPath.estimatedWeeks,
+              source: "gemini",
+              reason: "direct_response_grounded"
+            }
+          };
+        }
+
+        return {
+          statusCode: 200,
+          payload: {
+            reply: extractInteractionText(interaction),
+            status: result.status,
+            track: inferredTrack,
+            level: learningPath.level,
+            week1Actions: learningPath.steps,
+            estimatedWeeks: learningPath.estimatedWeeks,
+            starterPackUrl: buildStarterPackUrl(inferredTrack, learningPath.level),
+            source: "gemini",
+            reason: "direct_response_grounded"
+          }
         };
       }
 

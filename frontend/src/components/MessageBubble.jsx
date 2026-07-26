@@ -43,6 +43,7 @@ function renderActions(actions) {
 export default function MessageBubble({ message }) {
   const isUser = message.role === "user";
   const hasMentorLink = Boolean(message.mentorLink);
+  const hasStarterPack = Boolean(message.starterPackUrl);
   const sourceLabel =
     message.source === "fallback"
       ? "Fallback"
@@ -83,6 +84,20 @@ export default function MessageBubble({ message }) {
               className="mt-1 inline-block font-medium text-blue-700 underline break-all"
             >
               {message.mentor || message.track || message.mentorLink}
+            </a>
+          </div>
+        )}
+        {!isUser && hasStarterPack && (
+          <div className="mt-3 rounded-md border border-[#cfd8dc] bg-[#f8fbfc] p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Self-guided starter pack (4 weeks)
+            </div>
+            <a
+              href={message.starterPackUrl}
+              download
+              className="mt-1 inline-flex items-center gap-1 font-medium text-blue-700 underline break-all"
+            >
+              Download {message.track ? `${message.track} ` : ""}starter pack
             </a>
           </div>
         )}
