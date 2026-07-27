@@ -96,9 +96,9 @@ function buildFallbackReply(message, reason = "fallback_response") {
     return {
       reply:
         "I can help you find a mentor and a learning path across Frontend, Backend, " +
-          "Project Management, Cloud Computing, Data Analytics, AI/Machine Learning, " +
-          "Android/Mobile Development, UI/UX Design, Cybersecurity, DevOps/SRE, IT " +
-          "Support, or Digital Marketing. Tell me which one you're interested in.",
+        "Project Management, Cloud Computing, Data Analytics, AI/Machine Learning, " +
+        "Android/Mobile Development, UI/UX Design, Cybersecurity, DevOps/SRE, IT " +
+        "Support, or Digital Marketing. Tell me which one you're interested in.",
       source: "fallback",
       reason
     };
@@ -117,6 +117,7 @@ function buildFallbackReply(message, reason = "fallback_response") {
       mentorLink: result.link,
       week1Actions: learningPath.steps,
       estimatedWeeks: learningPath.estimatedWeeks,
+      starterPackUrl: buildStarterPackUrl(result.track, learningPath.level),
       source: "fallback",
       reason
     };
@@ -234,6 +235,7 @@ function createChatService({
               mentorLink: functionResult.link,
               week1Actions: learningPath.steps,
               estimatedWeeks: learningPath.estimatedWeeks,
+              starterPackUrl: buildStarterPackUrl(functionResult.track, learningPath.level),
               source: "gemini",
               reason: "tool_call_success_response"
             }
@@ -292,6 +294,7 @@ function createChatService({
               mentorLink: result.link,
               week1Actions: learningPath.steps,
               estimatedWeeks: learningPath.estimatedWeeks,
+              starterPackUrl: buildStarterPackUrl(result.track, learningPath.level),
               source: "gemini",
               reason: "direct_response_grounded"
             }

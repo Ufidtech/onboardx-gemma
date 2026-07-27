@@ -916,7 +916,10 @@ function generateStarterPackMarkdown({ track, level }) {
 
 function generateStarterPackFilename({ track, level }) {
   const pack = resolveStarterPack({ track, level });
-  const slug = pack.track.toLowerCase().replace(/\s+/g, "-");
+  const slug = pack.track
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-") // collapse anything unsafe (slashes, spaces, punctuation) into a hyphen
+    .replace(/^-+|-+$/g, ""); // trim leading/trailing hyphens
   return `${slug}-${pack.level}-starter-pack.pdf`;
 }
 

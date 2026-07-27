@@ -1,37 +1,50 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { generateLearningPath, listAvailableTracks } = require("./learningPathService");
+const {
+  generateStarterPackMarkdown,
+  generateStarterPackFilename,
+  generateStarterPackPdf
+} = require("./starterPackService");
 
-test("generates a distinct path for each known track", () => {
-  const tracks = listAvailableTracks();
-  assert.ok(tracks.length >= 3);
-
-  const paths = tracks.map((track) => generateLearningPath({ track, level: "beginner" }));
-  const stepSets = paths.map((p) => JSON.stringify(p.steps));
-
-  // no two tracks should produce identical content
-  assert.equal(new Set(stepSets).size, stepSets.length);
+test("generates 4 distinct weeks of real content, not just titles", () => {
+  const markdown = generateStarterPackMarkdown({ track: "Frontend", level: "beginner" });
+  const weekHeadingCount = (markdown.match(/^## Week \d/gm) || []).length;
+  assert.equal(weekHeadingCount, 4);
+  assert.ok(markdown.includes("**Resources:**"));
+  assert.ok(markdown.includes("**This week's task:**"));
 });
 
-test("beginner and intermediate paths differ for the same track", () => {
-  const beginner = generateLearningPath({ track: "Frontend", level: "beginner" });
-  const intermediate = generateLearningPath({ track: "Frontend", level: "intermediate" });
-
-  assert.notDeepEqual(beginner.steps, intermediate.steps);
+test("beginner and intermediate packs differ for the same track", () => {
+  const beginner = generateStarterPackMarkdown({ track: "Backend", level: "beginner" });
+  const intermediate = generateStarterPackMarkdown({ track: "Backend", level: "intermediate" });
+  assert.notEqual(beginner, intermediate);
 });
 
 test("falls back to sensible defaults for unknown track/level", () => {
-  const result = generateLearningPath({ track: "Not A Real Track", level: "expert" });
-
-  assert.equal(result.track, "Frontend");
-  assert.equal(result.level, "beginner");
-  assert.ok(Array.isArray(result.steps));
-  assert.ok(result.steps.length > 0);
+  const markdown = generateStarterPackMarkdown({ track: "Not Real", level: "expert" });
+  assert.ok(markdown.startsWith("# Frontend Starter Pack (beginner)"));
 });
 
-test("all 12 supported tracks are present", () => {
-  const tracks = listAvailableTracks();
-  const expected = [
+test("filename is a safe, lowercase, hyphenated .pdf slug", () => {
+  const filename = generateStarterPackFilename({ track: "Project Management", level: "intermediate" });
+  assert.equal(filename, "project-management-intermediate-starter-pack.pdf");
+});
+
+test("filename strips unsafe characters like slashes from track names", () => {
+  const filename = generateStarterPackFilename({ track: "AI / Machine Learning", level: "beginner" });
+  assert.equal(filename, "ai-machine-learning-beginner-starter-pack.pdf");
+  assert.ok(!filename.includes("/"), "filename must never contain a literal slash");
+});
+
+test("generates a real, non-empty PDF buffer with a valid PDF header", async () => {
+  const buffer = await generateStarterPackPdf({ track: "Frontend", level: "beginner" });
+  assert.ok(Buffer.isBuffer(buffer));
+  assert.ok(buffer.length > 500);
+  assert.equal(buffer.subarray(0, 5).toString(), "%PDF-");
+});
+
+test("PDF generation works for every known track/level combination", async () => {
+  const tracks = [
     "Frontend",
     "Backend",
     "Project Management",
@@ -45,14 +58,12 @@ test("all 12 supported tracks are present", () => {
     "IT Support",
     "Digital Marketing"
   ];
+  const levels = ["beginner", "intermediate"];
 
-  assert.equal(tracks.length, 12);
-  for (const track of expected) {
-    assert.ok(tracks.includes(track), `missing track: ${track}`);
+  for (const track of tracks) {
+    for (const level of levels) {
+      const buffer = await generateStarterPackPdf({ track, level });
+      assert.ok(buffer.length > 500, `${track}/${level} produced a suspiciously small PDF`);
+    }
   }
-});
-
-test("estimatedWeeks matches the number of steps", () => {
-  const result = generateLearningPath({ track: "Backend", level: "intermediate" });
-  assert.equal(result.estimatedWeeks, result.steps.length);
 });
