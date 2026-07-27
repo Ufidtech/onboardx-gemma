@@ -68,8 +68,8 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
   const hasMentorLink = Boolean(message.mentorLink);
   const hasStarterPack = Boolean(message.starterPackUrl);
   const hasAlternative = Boolean(message.alternative && message.alternative.mentor);
-  const availableTracks = Array.isArray(message.availableTracks)
-    ? message.availableTracks
+  const trackOptions = Array.isArray(message.trackOptions)
+    ? message.trackOptions
     : [];
   const sourceLabel =
     message.source === "fallback"
@@ -148,20 +148,32 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
           </div>
         )}
         {!isUser && renderActions(message.week1Actions)}
-        {!isUser && availableTracks.length > 0 && (
+        {!isUser && trackOptions.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {availableTracks.map((item) => (
-              <button
-                key={item.track}
-                type="button"
-                onClick={() => onSelectTrack?.(item.track)}
-                disabled={disabled}
-                title={`${item.seatsAvailable} seat${item.seatsAvailable === 1 ? "" : "s"} available`}
-                className="rounded-full border border-[#25d366] bg-white px-3 py-1 text-xs font-medium text-[#075e54] transition hover:bg-[#e7fbe9] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {item.track}
-              </button>
-            ))}
+            {trackOptions.map((item) => {
+              const isFull = item.seatsAvailable <= 0;
+              return (
+                <button
+                  key={item.track}
+                  type="button"
+                  onClick={() => onSelectTrack?.(item.track)}
+                  disabled={disabled || isFull}
+                  title={
+                    isFull
+                      ? "Currently full"
+                      : `${item.seatsAvailable} seat${item.seatsAvailable === 1 ? "" : "s"} available`
+                  }
+                  className={
+                    isFull
+                      ? "cursor-not-allowed rounded-full border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-medium text-gray-400"
+                      : "rounded-full border border-[#25d366] bg-white px-3 py-1 text-xs font-medium text-[#075e54] transition hover:bg-[#e7fbe9] disabled:cursor-not-allowed disabled:opacity-50"
+                  }
+                >
+                  {item.track}
+                  {isFull ? " (full)" : ""}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

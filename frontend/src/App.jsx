@@ -93,7 +93,7 @@ export default function App() {
           track: data.track,
           week1Actions: data.week1Actions,
           alternative: data.alternative,
-          availableTracks: data.availableTracks,
+          trackOptions: data.trackOptions,
           starterPackUrl: data.starterPackUrl
             ? `${apiBaseUrl}${data.starterPackUrl}`
             : undefined,

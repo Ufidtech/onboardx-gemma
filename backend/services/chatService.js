@@ -8,13 +8,11 @@ const {
 const { generateLearningPath } = require("./learningPathService");
 const { getOrCreateSession } = require("./sessionService");
 
-function getAvailableTracks() {
-  return getMentorSnapshot()
-    .filter((mentor) => mentor.seatsAvailable > 0)
-    .map((mentor) => ({
-      track: mentor.track,
-      seatsAvailable: mentor.seatsAvailable
-    }));
+function getTrackOptions() {
+  return getMentorSnapshot().map((mentor) => ({
+    track: mentor.track,
+    seatsAvailable: mentor.seatsAvailable
+  }));
 }
 
 function buildStarterPackUrl(track, level) {
@@ -216,6 +214,9 @@ function buildSystemInstruction() {
     "natural sentences only. Never write out the mentor's raw WhatsApp link yourself -",
     "the app already displays it in its own dedicated link button, so just refer to the",
     "mentor by name (e.g. 'reach out to Priya') instead of repeating the URL.",
+    "When you don't yet know the user's track and are inviting them to choose, do NOT",
+    "list or name the tracks in your reply - the app shows every track as a tappable",
+    "button right below your message. Just briefly invite the user to tap a track below.",
     "Current mentor inventory:",
     buildMentorContext()
   ].join("\n");
@@ -240,10 +241,8 @@ function buildFallbackReply(message, session, reason = "fallback_response") {
   if (!context) {
     return {
       reply:
-        "I can help you find a mentor and a learning path across Frontend, Backend, " +
-          "Project Management, Cloud Computing, Data Analytics, AI/Machine Learning, " +
-          "Android/Mobile Development, UI/UX Design, Cybersecurity, DevOps/SRE, IT " +
-          "Support, or Digital Marketing. Tell me which one you're interested in.",
+        "I can help you find a mentor and a learning path. Tap one of the tracks " +
+          "below to get started, or tell me what you're interested in.",
       source: "fallback",
       reason
     };
@@ -541,7 +540,7 @@ function createChatService({
 
     result.payload = {
       ...result.payload,
-      ...(result.payload.track ? {} : { availableTracks: getAvailableTracks() }),
+      ...(result.payload.track ? {} : { trackOptions: getTrackOptions() }),
       usage: {
         requestTokens: requestUsage.totalTokens,
         requestInputTokens: requestUsage.inputTokens,
