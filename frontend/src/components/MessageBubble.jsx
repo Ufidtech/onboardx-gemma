@@ -63,11 +63,14 @@ function renderActions(actions) {
   );
 }
 
-export default function MessageBubble({ message }) {
+export default function MessageBubble({ message, onSelectTrack, disabled }) {
   const isUser = message.role === "user";
   const hasMentorLink = Boolean(message.mentorLink);
   const hasStarterPack = Boolean(message.starterPackUrl);
   const hasAlternative = Boolean(message.alternative && message.alternative.mentor);
+  const availableTracks = Array.isArray(message.availableTracks)
+    ? message.availableTracks
+    : [];
   const sourceLabel =
     message.source === "fallback"
       ? "Fallback"
@@ -145,6 +148,22 @@ export default function MessageBubble({ message }) {
           </div>
         )}
         {!isUser && renderActions(message.week1Actions)}
+        {!isUser && availableTracks.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {availableTracks.map((item) => (
+              <button
+                key={item.track}
+                type="button"
+                onClick={() => onSelectTrack?.(item.track)}
+                disabled={disabled}
+                title={`${item.seatsAvailable} seat${item.seatsAvailable === 1 ? "" : "s"} available`}
+                className="rounded-full border border-[#25d366] bg-white px-3 py-1 text-xs font-medium text-[#075e54] transition hover:bg-[#e7fbe9] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {item.track}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

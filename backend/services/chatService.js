@@ -2,10 +2,20 @@ const {
   buildMentorContext,
   checkMentorCapacity,
   inferTrackFromMessage,
-  inferLevelFromMessage
+  inferLevelFromMessage,
+  getMentorSnapshot
 } = require("../routes/mentorUtils");
 const { generateLearningPath } = require("./learningPathService");
 const { getOrCreateSession } = require("./sessionService");
+
+function getAvailableTracks() {
+  return getMentorSnapshot()
+    .filter((mentor) => mentor.seatsAvailable > 0)
+    .map((mentor) => ({
+      track: mentor.track,
+      seatsAvailable: mentor.seatsAvailable
+    }));
+}
 
 function buildStarterPackUrl(track, level) {
   const params = new URLSearchParams({ track, level }).toString();
@@ -531,6 +541,7 @@ function createChatService({
 
     result.payload = {
       ...result.payload,
+      ...(result.payload.track ? {} : { availableTracks: getAvailableTracks() }),
       usage: {
         requestTokens: requestUsage.totalTokens,
         requestInputTokens: requestUsage.inputTokens,
