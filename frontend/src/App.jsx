@@ -6,6 +6,15 @@ import DebugPanel from "./components/DebugPanel";
 
 export default function App() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+  // A stable id for this browser tab's conversation, so the backend can
+  // remember an established track/mentor across messages instead of
+  // evaluating every message in total isolation. Generated once and kept
+  // in memory only - a page refresh starts a fresh conversation.
+  const [sessionId] = useState(() =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
   const [messages, setMessages] = useState([
     {
       role: "agent",
@@ -51,11 +60,6 @@ export default function App() {
   }, [apiBaseUrl]);
 
   const handleSendMessage = async (content) => {
-    const history = messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
     setMessages((prev) => [...prev, { role: "user", content }]);
     setIsTyping(true);
 
@@ -63,11 +67,13 @@ export default function App() {
       const response = await fetch(`${apiBaseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: content, history }),
+        body: JSON.stringify({ message: content, sessionId }),
       });
 
       if (!response.ok) {
-        throw new Error(`Backend request failed with status ${response.status}`);
+        throw new Error(
+          `Backend request failed with status ${response.status}`,
+        );
       }
 
       const data = await response.json();

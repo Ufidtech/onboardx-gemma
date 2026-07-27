@@ -5,10 +5,138 @@ const {
   inferLevelFromMessage
 } = require("../routes/mentorUtils");
 const { generateLearningPath } = require("./learningPathService");
+const { getOrCreateSession } = require("./sessionService");
 
 function buildStarterPackUrl(track, level) {
   const params = new URLSearchParams({ track, level }).toString();
   return `/api/resources/starter-pack?${params}`;
+}
+
+/**
+ * The chat UI renders plain text, not markdown - so if Gemma writes
+ * "**Priya**" it shows up as literal, broken-looking asterisks instead of
+ * bold text. This strips common markdown emphasis syntax as a guaranteed
+ * safety net, on top of (not instead of) asking Gemma not to use it in the
+ * system prompt - prompt instructions alone aren't 100% reliable.
+ */
+function stripMarkdownEmphasis(text) {
+  return text
+    .replace(/\*\*\*(.+?)\*\*\*/g, "$1") // ***bold italic***
+    .replace(/\*\*(.+?)\*\*/g, "$1") // **bold**
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "$1") // *italic*
+    .replace(/__(.+?)__/g, "$1") // __bold__
+    .replace(/ {2,}/g, " ") // collapse any double spaces left behind
+    .trim();
+}
+
+/**
+ * The frontend already renders the mentor's contact link in its own
+ * dedicated "Mentor link" box. If Gemma also writes the raw URL out in its
+ * prose, it shows up twice - once redundantly inline, once in the box.
+ * Strip the exact URL (and light trailing punctuation) from the prose so
+ * it only appears once, in the box where it belongs.
+ */
+function stripDuplicateLink(text, link) {
+  if (!link) return text;
+
+  const escaped = link.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return text
+    .replace(new RegExp(`:?\\s*${escaped}[.,;:!?]?`, "g"), "")
+    .replace(/ {2,}/g, " ")
+    .replace(/\s+([.,;:!?])/g, "$1") // no stray space before leftover punctuation
+    .trim();
+}
+
+function cleanReplyText(text, link) {
+  return stripDuplicateLink(stripMarkdownEmphasis(text), link);
+}
+
+/**
+ * Returns the grounded track context (mentor match + curriculum info) for
+ * this turn, reusing an already-established session match instead of
+ * re-computing (and re-decrementing a mentor seat) whenever possible.
+ *
+ * Behavior:
+ *  - If this message names a DIFFERENT track than the session currently
+ *    has (or the session has none yet), that's a fresh pick or a pivot -
+ *    compute a new match, store it on the session, and return it.
+ *  - If this message doesn't name any track, but the session already has
+ *    an established one, reuse that stored match so links don't silently
+ *    disappear on follow-up questions like "what does a frontend dev do?"
+ *  - If neither the message nor the session has a track, return null -
+ *    genuinely nothing to ground yet (e.g. the very first "hi").
+ *
+ * @returns {null | {status, track, level, mentor, mentorLink, alternative, week1Actions, estimatedWeeks, starterPackUrl, reused}}
+ */
+function resolveGroundedContext(message, session, explicitTrack, explicitLevel) {
+  const inferredTrack = explicitTrack || inferTrackFromMessage(message);
+  const isNewOrPivot = inferredTrack && inferredTrack !== session.track;
+
+  if (isNewOrPivot) {
+    const level =
+      explicitLevel === "intermediate" || explicitLevel === "beginner"
+        ? explicitLevel
+        : inferLevelFromMessage(message);
+    const learningPath = generateLearningPath({ track: inferredTrack, level });
+    const result = checkMentorCapacity(inferredTrack);
+
+    const match = {
+      status: result.status,
+      track: result.track || inferredTrack,
+      level: learningPath.level,
+      mentor: result.mentor || null,
+      mentorLink: result.link || null,
+      alternative: result.alternative || null,
+      week1Actions: learningPath.steps,
+      estimatedWeeks: learningPath.estimatedWeeks,
+      starterPackUrl: buildStarterPackUrl(result.track || inferredTrack, learningPath.level)
+    };
+
+    session.track = inferredTrack;
+    session.level = learningPath.level;
+    session.match = match;
+
+    return { ...match, reused: false };
+  }
+
+  if (session.track && session.match) {
+    return { ...session.match, reused: true };
+  }
+
+  return null;
+}
+
+function buildReplyFromContext(context, textOverride) {
+  if (context.status === "success") {
+    return {
+      reply: textOverride || `You’re matched with ${context.mentor} for ${context.track}.`,
+      status: "success",
+      track: context.track,
+      level: context.level,
+      mentor: context.mentor,
+      mentorLink: context.mentorLink,
+      week1Actions: context.week1Actions,
+      estimatedWeeks: context.estimatedWeeks,
+      starterPackUrl: context.starterPackUrl
+    };
+  }
+
+  const altText = context.alternative
+    ? ` In the meantime, ${context.alternative.mentor} has open capacity for ${context.alternative.track} if you'd like to explore that instead.`
+    : "";
+
+  return {
+    reply:
+      textOverride ||
+      `That track is currently full.${altText} Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.`,
+    status: "full",
+    track: context.track,
+    level: context.level,
+    week1Actions: context.week1Actions,
+    estimatedWeeks: context.estimatedWeeks,
+    starterPackUrl: context.starterPackUrl,
+    alternative: context.alternative || null
+  };
 }
 
 function extractInteractionText(interaction) {
@@ -57,11 +185,6 @@ function buildSystemInstruction() {
     "Do not reveal private chain-of-thought. Give a concise answer that helps the user act quickly.",
     "If the user is vague, ask exactly one clarifying question.",
     "If the user wants a track with available seats, call check_mentor_capacity.",
-    "When you call check_mentor_capacity, YOU own the decision: read the user's",
-    "free-text message, classify it into exactly one track from the tool's enum,",
-    "infer their experience level (beginner or intermediate), and pass a one-sentence",
-    "'reasoning' explaining why. If the message already implies a track, decide it",
-    "yourself instead of asking the user to pick from a raw list.",
     "IMPORTANT - mentor framing: mentors are experienced community members who offer",
     "guidance, answer questions, and point the mentee in the right direction. They are",
     "NOT formal instructors running lessons or teaching a curriculum. Always frame a",
@@ -75,118 +198,48 @@ function buildSystemInstruction() {
     "name that mentor and track as a genuine option before mentioning the self-guided",
     "starter pack - do not present the alternative as the same track, and do not invent",
     "an alternative yourself if the tool result did not provide one.",
+    "If the user has already been matched earlier in this conversation and asks a",
+    "follow-up question that doesn't mention a track, just answer their question - you",
+    "do not need to call check_mentor_capacity again for the same track.",
+    "FORMATTING: this is a plain-text chat bubble, not a markdown renderer. Never use",
+    "**bold**, *italics*, markdown headers, or bullet dashes in your reply - write plain,",
+    "natural sentences only. Never write out the mentor's raw WhatsApp link yourself -",
+    "the app already displays it in its own dedicated link button, so just refer to the",
+    "mentor by name (e.g. 'reach out to Priya') instead of repeating the URL.",
     "Current mentor inventory:",
     buildMentorContext()
   ].join("\n");
 }
 
-function formatHistory(history) {
-  if (!Array.isArray(history)) {
-    return "";
-  }
-
-  return history
-    .filter((turn) => turn && typeof turn.content === "string" && turn.content.trim())
-    .map((turn) => {
-      const speaker = turn.role === "user" ? "User" : "Assistant";
-      return `${speaker}: ${turn.content.trim()}`;
-    })
-    .join("\n");
-}
-
-function inferTrackFromConversation(message, history = []) {
-  const current = inferTrackFromMessage(message);
-  if (current) {
-    return current;
-  }
-
-  if (!Array.isArray(history)) {
-    return null;
-  }
-
-  for (let i = history.length - 1; i >= 0; i -= 1) {
-    const turn = history[i];
-    if (turn && turn.role === "user" && typeof turn.content === "string") {
-      const track = inferTrackFromMessage(turn.content);
-      if (track) {
-        return track;
-      }
-    }
-  }
-
-  return null;
-}
-
-function buildModelInput(message, history = []) {
-  const transcript = formatHistory(history);
-
+function buildModelInput(message) {
   return [
     "Use the mentor inventory and app context below to answer the user helpfully.",
     "Prioritize the user goal, the available capacity, and the best next action.",
-    "Continue the ongoing conversation naturally. Do not re-ask for information the",
-    "user already gave you earlier in the conversation.",
     "",
     "App context:",
     buildMentorContext(),
-    ...(transcript ? ["", "Conversation so far:", transcript] : []),
     "",
     "User message:",
     message
   ].join("\n");
 }
 
-function buildFallbackReply(message, reason = "fallback_response") {
-  const track = inferTrackFromMessage(message);
-  const level = inferLevelFromMessage(message);
+function buildFallbackReply(message, session, reason = "fallback_response") {
+  const context = resolveGroundedContext(message, session);
 
-  if (!track) {
+  if (!context) {
     return {
       reply:
         "I can help you find a mentor and a learning path across Frontend, Backend, " +
-        "Project Management, Cloud Computing, Data Analytics, AI/Machine Learning, " +
-        "Android/Mobile Development, UI/UX Design, Cybersecurity, DevOps/SRE, IT " +
-        "Support, or Digital Marketing. Tell me which one you're interested in.",
+          "Project Management, Cloud Computing, Data Analytics, AI/Machine Learning, " +
+          "Android/Mobile Development, UI/UX Design, Cybersecurity, DevOps/SRE, IT " +
+          "Support, or Digital Marketing. Tell me which one you're interested in.",
       source: "fallback",
       reason
     };
   }
 
-  const learningPath = generateLearningPath({ track, level });
-  const result = checkMentorCapacity(track);
-
-  if (result.status === "success") {
-    return {
-      reply: `You’re matched with ${result.mentor} for ${result.track}.`,
-      status: "success",
-      track: result.track,
-      level: learningPath.level,
-      mentor: result.mentor,
-      mentorLink: result.link,
-      week1Actions: learningPath.steps,
-      estimatedWeeks: learningPath.estimatedWeeks,
-      starterPackUrl: buildStarterPackUrl(result.track, learningPath.level),
-      source: "fallback",
-      reason
-    };
-  }
-
-  const altText = result.alternative
-    ? ` In the meantime, ${result.alternative.mentor} has open capacity for ${result.alternative.track} if you'd like to explore that instead.`
-    : "";
-
-  return {
-    reply:
-      `That track is currently full.${altText} Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.`,
-    status: "full",
-    track,
-    level: learningPath.level,
-    week1Actions: learningPath.steps,
-    estimatedWeeks: learningPath.estimatedWeeks,
-    starterPackUrl: buildStarterPackUrl(track, learningPath.level),
-    alternative: result.alternative || null,
-    source: "fallback",
-    reason
-  };
+  return { ...buildReplyFromContext(context), source: "fallback", reason };
 }
 
 function logChatSource(source, reason) {
@@ -236,7 +289,9 @@ function createChatService({
 }) {
   let totalTokensUsed = 0;
 
-  async function generateReplyInner(message, history, requestUsage) {
+  async function generateReplyInner(message, sessionId, requestUsage) {
+    const session = getOrCreateSession(sessionId);
+
     if (!aiClient) {
       logChatSource("FALLBACK", "missing_api_key");
       return {
@@ -252,7 +307,7 @@ function createChatService({
     try {
       let interaction = await aiClient.interactions.create({
         model: modelName,
-        input: buildModelInput(message, history),
+        input: buildModelInput(message),
         tools: [checkMentorCapacityTool],
         system_instruction: buildSystemInstruction()
       });
@@ -262,7 +317,27 @@ function createChatService({
       const functionCall = extractFunctionCall(interaction);
 
       if (functionCall) {
-        const functionResult = checkMentorCapacity(functionCall.arguments?.track);
+        // Gemma explicitly asked to check a track. Reuse the session's
+        // existing match if it's the same track (avoids re-decrementing a
+        // seat for someone already matched), otherwise compute fresh.
+        const requestedTrack = functionCall.arguments?.track;
+        const requestedLevel = functionCall.arguments?.level;
+        const reasoning = functionCall.arguments?.reasoning || null;
+        const context = resolveGroundedContext(
+          message,
+          session,
+          requestedTrack,
+          requestedLevel
+        );
+        const functionResult = context
+          ? {
+              status: context.status,
+              track: context.track,
+              mentor: context.mentor,
+              link: context.mentorLink,
+              alternative: context.alternative
+            }
+          : checkMentorCapacity(requestedTrack);
 
         interaction = await aiClient.interactions.create({
           model: modelName,
@@ -283,63 +358,43 @@ function createChatService({
           logChatSource("FALLBACK", "empty_gemma_response_after_tool");
           return {
             statusCode: 200,
-            payload: buildFallbackReply(message, "empty_gemma_response_after_tool")
+            payload: buildFallbackReply(message, session, "empty_gemma_response_after_tool")
           };
         }
 
-        const decidedLevel =
-          functionCall.arguments?.level === "intermediate"
-            ? "intermediate"
-            : functionCall.arguments?.level === "beginner"
-              ? "beginner"
-              : inferLevelFromMessage(message);
-        const learningPath = generateLearningPath({
-          track: functionResult.track,
-          level: decidedLevel
-        });
-        const decision = {
-          track: functionResult.track,
-          level: learningPath.level,
-          reasoning: functionCall.arguments?.reasoning || null,
-          decidedBy: "gemma"
-        };
+        const replyText = cleanReplyText(extractInteractionText(interaction), context?.mentorLink);
 
-        if (functionResult.status === "success") {
-          logChatSource("GEMMA", "tool_call_success_response");
+        if (context) {
+          logChatSource(
+            "GEMMA",
+            context.status === "success" ? "tool_call_success_response" : "tool_call_full_response"
+          );
           return {
             statusCode: 200,
             payload: {
-              reply: extractInteractionText(interaction),
-              status: functionResult.status,
-              track: functionResult.track,
-              level: learningPath.level,
-              mentor: functionResult.mentor,
-              mentorLink: functionResult.link,
-              week1Actions: learningPath.steps,
-              estimatedWeeks: learningPath.estimatedWeeks,
-              starterPackUrl: buildStarterPackUrl(functionResult.track, learningPath.level),
-              decision,
+              ...buildReplyFromContext(context, replyText),
+              decision: {
+                track: context.track,
+                level: context.level,
+                reasoning,
+                decidedBy: "gemma"
+              },
               source: "gemini",
-              reason: "tool_call_success_response"
+              reason:
+                context.status === "success" ? "tool_call_success_response" : "tool_call_full_response"
             }
           };
         }
 
-        logChatSource("GEMMA", "tool_call_full_response");
+        logChatSource("GEMMA", "tool_call_no_context");
         return {
           statusCode: 200,
           payload: {
-            reply: extractInteractionText(interaction),
-            status: functionResult.status,
-            track: functionResult.track,
-            level: learningPath.level,
-            week1Actions: learningPath.steps,
-            estimatedWeeks: learningPath.estimatedWeeks,
-            starterPackUrl: buildStarterPackUrl(functionResult.track, learningPath.level),
-            alternative: functionResult.alternative || null,
-            decision,
+            reply: replyText,
+            status: "agent",
+            week1Actions: [],
             source: "gemini",
-            reason: "tool_call_full_response"
+            reason: "tool_call_no_context"
           }
         };
       }
@@ -348,62 +403,30 @@ function createChatService({
         logChatSource("FALLBACK", "empty_gemma_response_no_tool");
         return {
           statusCode: 200,
-          payload: buildFallbackReply(message, "empty_gemma_response_no_tool")
+          payload: buildFallbackReply(message, session, "empty_gemma_response_no_tool")
         };
       }
 
-      // Gemma answered directly without calling check_mentor_capacity this turn.
-      // Don't rely on the model choosing to call the tool every time - if we can
-      // infer a track from the message ourselves, still attach real, grounded
-      // data (mentor link or starter pack) instead of leaving the user with only
-      // whatever Gemma improvised in plain text.
-      const inferredTrack = inferTrackFromConversation(message, history);
+      // Gemma answered directly without calling check_mentor_capacity this
+      // turn. Ground it from the message OR, importantly, from the
+      // session's already-established track - so a follow-up question
+      // that doesn't repeat the track's name still keeps its mentor
+      // link/curriculum attached instead of silently losing them.
+      const context = resolveGroundedContext(message, session);
+      const replyText = cleanReplyText(extractInteractionText(interaction), context?.mentorLink);
 
-      if (inferredTrack) {
-        const level = inferLevelFromMessage(message);
-        const learningPath = generateLearningPath({ track: inferredTrack, level });
-        const result = checkMentorCapacity(inferredTrack);
-        const decision = {
-          track: inferredTrack,
-          level: learningPath.level,
-          reasoning: null,
-          decidedBy: "fallback_inference"
-        };
-
+      if (context) {
         logChatSource("GEMMA", "direct_response_grounded");
-
-        if (result.status === "success") {
-          return {
-            statusCode: 200,
-            payload: {
-              reply: extractInteractionText(interaction),
-              status: result.status,
-              track: result.track,
-              level: learningPath.level,
-              mentor: result.mentor,
-              mentorLink: result.link,
-              week1Actions: learningPath.steps,
-              estimatedWeeks: learningPath.estimatedWeeks,
-              starterPackUrl: buildStarterPackUrl(result.track, learningPath.level),
-              decision,
-              source: "gemini",
-              reason: "direct_response_grounded"
-            }
-          };
-        }
-
         return {
           statusCode: 200,
           payload: {
-            reply: extractInteractionText(interaction),
-            status: result.status,
-            track: inferredTrack,
-            level: learningPath.level,
-            week1Actions: learningPath.steps,
-            estimatedWeeks: learningPath.estimatedWeeks,
-            starterPackUrl: buildStarterPackUrl(inferredTrack, learningPath.level),
-            alternative: result.alternative || null,
-            decision,
+            ...buildReplyFromContext(context, replyText),
+            decision: {
+              track: context.track,
+              level: context.level,
+              reasoning: null,
+              decidedBy: "fallback_inference"
+            },
             source: "gemini",
             reason: "direct_response_grounded"
           }
@@ -414,7 +437,7 @@ function createChatService({
       return {
         statusCode: 200,
         payload: {
-          reply: extractInteractionText(interaction),
+          reply: replyText,
           status: "agent",
           week1Actions: [],
           source: "gemini",
@@ -443,14 +466,14 @@ function createChatService({
       logChatSource("FALLBACK", "gemma_request_failed");
       return {
         statusCode: 200,
-        payload: buildFallbackReply(message, "gemma_request_failed")
+        payload: buildFallbackReply(message, session, "gemma_request_failed")
       };
     }
   }
 
-  async function generateReply(message, history = []) {
+  async function generateReply(message, sessionId) {
     const requestUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-    const result = await generateReplyInner(message, history, requestUsage);
+    const result = await generateReplyInner(message, sessionId, requestUsage);
 
     totalTokensUsed += requestUsage.totalTokens;
     const tokensLeft =
