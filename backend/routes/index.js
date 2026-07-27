@@ -19,7 +19,6 @@ function createApiRouter(deps) {
       checkMentorCapacityTool: deps.checkMentorCapacityTool,
       tokenBudget: deps.tokenBudget,
       thinkingLevel: deps.thinkingLevel,
-      fastReply: deps.fastReply,
       maxOutputTokens: deps.maxOutputTokens
     })
   );

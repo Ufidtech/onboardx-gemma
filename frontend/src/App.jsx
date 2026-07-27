@@ -63,42 +63,92 @@ export default function App() {
     setMessages((prev) => [...prev, { role: "user", content }]);
     setIsTyping(true);
 
+    const buildAgentMessage = (data) => ({
+      role: "agent",
+      content: data.reply,
+      status: data.status,
+      source: data.source,
+      mentor: data.mentor,
+      mentorLink: data.mentorLink,
+      track: data.track,
+      week1Actions: data.week1Actions,
+      alternative: data.alternative,
+      trackOptions: data.trackOptions,
+      starterPackUrl: data.starterPackUrl
+        ? `${apiBaseUrl}${data.starterPackUrl}`
+        : undefined,
+    });
+
+    const replaceLastAgent = (list, next) => {
+      const copy = list.slice();
+      copy[copy.length - 1] = next;
+      return copy;
+    };
+
+    let streamStarted = false;
+
     try {
-      const response = await fetch(`${apiBaseUrl}/api/chat`, {
+      const response = await fetch(`${apiBaseUrl}/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: content, sessionId }),
       });
 
-      if (!response.ok) {
+      if (!response.ok || !response.body) {
         throw new Error(
           `Backend request failed with status ${response.status}`,
         );
       }
 
-      const data = await response.json();
-      setLastSource(data.source || "gemini");
-      setLastReason(data.reason || "unknown");
-      setUsage(data.usage || null);
-      setDecision(data.decision || null);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "agent",
-          content: data.reply,
-          status: data.status,
-          source: data.source,
-          mentor: data.mentor,
-          mentorLink: data.mentorLink,
-          track: data.track,
-          week1Actions: data.week1Actions,
-          alternative: data.alternative,
-          trackOptions: data.trackOptions,
-          starterPackUrl: data.starterPackUrl
-            ? `${apiBaseUrl}${data.starterPackUrl}`
-            : undefined,
-        },
-      ]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let streamDone = false;
+
+      while (!streamDone) {
+        const { value, done } = await reader.read();
+        streamDone = done;
+        buffer += decoder.decode(value || new Uint8Array(), { stream: true });
+
+        const chunks = buffer.split("\n\n");
+        buffer = chunks.pop() ?? "";
+
+        for (const chunk of chunks) {
+          const line = chunk.trim();
+          if (!line.startsWith("data:")) continue;
+
+          const event = JSON.parse(line.slice(5).trim());
+
+          if (event.type === "delta") {
+            if (!streamStarted) {
+              streamStarted = true;
+              setIsTyping(false);
+              setMessages((prev) => [
+                ...prev,
+                { role: "agent", content: event.text },
+              ]);
+            } else {
+              setMessages((prev) =>
+                replaceLastAgent(prev, {
+                  ...prev[prev.length - 1],
+                  content: prev[prev.length - 1].content + event.text,
+                }),
+              );
+            }
+          } else if (event.type === "done") {
+            const data = event.payload || {};
+            setLastSource(data.source || "gemini");
+            setLastReason(data.reason || "unknown");
+            setUsage(data.usage || null);
+            setDecision(data.decision || null);
+            setMessages((prev) =>
+              streamStarted
+                ? replaceLastAgent(prev, buildAgentMessage(data))
+                : [...prev, buildAgentMessage(data)],
+            );
+          }
+        }
+      }
     } catch {
       setLastSource("fallback");
       setLastReason("request_failed");

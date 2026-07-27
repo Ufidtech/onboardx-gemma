@@ -189,26 +189,15 @@ function hasUsableInteractionText(interaction) {
 function buildSystemInstruction() {
   return [
     "You are OnboardX, a practical onboarding agent for new community members.",
-    "Think through the user's message internally and use the mentor inventory below to choose the most useful next step.",
-    "Do not reveal private chain-of-thought. Give a concise answer that helps the user act quickly.",
-    "If the user is vague, ask exactly one clarifying question.",
-    "If the user wants a track with available seats, call check_mentor_capacity.",
+    "Think through the user's message together with the grounded facts you are given,",
+    "then give a concise, helpful reply. Do not reveal private chain-of-thought.",
     "IMPORTANT - mentor framing: mentors are experienced community members who offer",
     "guidance, answer questions, and point the mentee in the right direction. They are",
     "NOT formal instructors running lessons or teaching a curriculum. Always frame a",
     "mentor match as 'someone to talk to for guidance and advice', never as 'someone",
     "who will teach you' or 'your instructor'. The actual learning happens through the",
     "self-guided track content; the mentor is community support alongside it.",
-    "If check_mentor_capacity returns status 'success', that means the CURRENT user has",
-    "just been matched successfully - say so plainly and do not contradict it by talking",
-    "about remaining seat counts. If a track is full, check whether the result includes",
-    "an 'alternative' mentor in a different track with real open capacity. If it does,",
-    "name that mentor and track as a genuine option before mentioning the self-guided",
-    "starter pack - do not present the alternative as the same track, and do not invent",
-    "an alternative yourself if the tool result did not provide one.",
-    "If the user has already been matched earlier in this conversation and asks a",
-    "follow-up question that doesn't mention a track, just answer their question - you",
-    "do not need to call check_mentor_capacity again for the same track.",
+    "Use only facts you are given - never invent mentors, seats, links, or tracks.",
     "FORMATTING: this is a plain-text chat bubble, not a markdown renderer. Never use",
     "**bold**, *italics*, markdown headers, or bullet dashes in your reply - write plain,",
     "natural sentences only. Never write out the mentor's raw WhatsApp link yourself -",
@@ -222,17 +211,51 @@ function buildSystemInstruction() {
   ].join("\n");
 }
 
-function buildModelInput(message) {
-  return [
-    "Use the mentor inventory and app context below to answer the user helpfully.",
-    "Prioritize the user goal, the available capacity, and the best next action.",
-    "",
-    "App context:",
-    buildMentorContext(),
+function buildComposeInput(message, context) {
+  const lines = [
+    "You are replying to a community member. Think about their message together with",
+    "the grounded facts below, then write ONE warm, concise, natural reply (2-4",
+    "sentences) that helps them act next. Use ONLY the facts provided - never invent",
+    "mentors, seats, links, tracks, or curriculum.",
     "",
     "User message:",
-    message
-  ].join("\n");
+    message,
+    ""
+  ];
+
+  if (context && context.status === "success") {
+    lines.push(
+      "Grounded match (real data you must use):",
+      `- Track: ${context.track}`,
+      `- Experience level: ${context.level}`,
+      `- Mentor to reach out to for guidance and advice: ${context.mentor}`,
+      `- First things to focus on: ${(context.week1Actions || []).join("; ")}`,
+      "",
+      "Encourage them, name the mentor as someone to reach out to for guidance and",
+      "advice (not an instructor who teaches), and briefly point at what to start with."
+    );
+  } else if (context && context.status === "full") {
+    const alt = context.alternative;
+    lines.push(
+      "Grounded situation (real data you must use):",
+      `- The ${context.track} track is currently FULL (no mentor seats right now).`,
+      alt
+        ? `- A real alternative with open capacity: ${alt.mentor} for ${alt.track}.`
+        : "- No other mentor currently has open capacity.",
+      "- A self-guided starter pack for the requested track is shown below your reply.",
+      "",
+      "Be honest that the track is full. If an alternative mentor exists, offer them by",
+      "name as a genuine option, then mention the self-guided starter pack below."
+    );
+  } else {
+    lines.push(
+      "No specific track is established yet.",
+      "Invite the user, in one short sentence, to tap one of the track buttons shown",
+      "below your message. Do NOT list or name any tracks in your text."
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function buildFallbackReply(message, session, reason = "fallback_response") {
@@ -255,24 +278,6 @@ function logChatSource(source, reason) {
   console.log(`[chat-source] ${source} (${reason})`);
 }
 
-function extractFunctionCall(interaction) {
-  const fromOutputs = (interaction?.outputs || []).find(
-    (output) =>
-      output.type === "function_call" && output.name === "check_mentor_capacity"
-  );
-
-  if (fromOutputs) {
-    return fromOutputs;
-  }
-
-  const fromSteps = (interaction?.steps || []).find(
-    (step) =>
-      step.type === "function_call" && step.name === "check_mentor_capacity"
-  );
-
-  return fromSteps || null;
-}
-
 function extractUsage(interaction) {
   const usage = interaction?.usage || {};
   const inputTokens = usage.total_input_tokens || 0;
@@ -293,10 +298,8 @@ function createChatService({
   aiClient,
   modelName,
   strictGeminiApi,
-  checkMentorCapacityTool,
   tokenBudget = null,
   thinkingLevel = null,
-  fastReply = true,
   maxOutputTokens = null
 }) {
   let totalTokensUsed = 0;
@@ -327,155 +330,36 @@ function createChatService({
     }
 
     try {
-      let interaction = await aiClient.interactions.create({
+      // Resolve the grounded match deterministically up front (mentor, seats,
+      // curriculum) - no model call needed. Then hand those real facts to the
+      // thinking model in a SINGLE call and let it reason over them to compose
+      // a warm, personalized reply, instead of returning a canned template.
+      const context = resolveGroundedContext(message, session);
+
+      const interaction = await aiClient.interactions.create({
         model: modelName,
-        input: buildModelInput(message),
-        tools: [checkMentorCapacityTool],
+        input: buildComposeInput(message, context),
         system_instruction: buildSystemInstruction(),
         ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
       });
 
       addUsage(requestUsage, interaction);
 
-      const functionCall = extractFunctionCall(interaction);
-
-      if (functionCall) {
-        // Gemma explicitly asked to check a track. Reuse the session's
-        // existing match if it's the same track (avoids re-decrementing a
-        // seat for someone already matched), otherwise compute fresh.
-        const requestedTrack = functionCall.arguments?.track;
-        const requestedLevel = functionCall.arguments?.level;
-        const reasoning = functionCall.arguments?.reasoning || null;
-        const context = resolveGroundedContext(
-          message,
-          session,
-          requestedTrack,
-          requestedLevel
-        );
-
-        // Fast path: Gemma already reasoned and decided on the first call
-        // (track/level/reasoning are in the tool call). Skip the expensive
-        // second round-trip and answer from the grounded deterministic
-        // reply, roughly halving matched-turn latency.
-        if (fastReply) {
-          if (context) {
-            const reason =
-              context.status === "success"
-                ? "tool_call_success_response"
-                : "tool_call_full_response";
-            logChatSource("GEMMA", reason);
-            return {
-              statusCode: 200,
-              payload: {
-                ...buildReplyFromContext(context),
-                decision: {
-                  track: context.track,
-                  level: context.level,
-                  reasoning,
-                  decidedBy: "gemma"
-                },
-                source: "gemini",
-                reason
-              }
-            };
-          }
-
-          logChatSource("FALLBACK", "tool_call_no_context");
-          return {
-            statusCode: 200,
-            payload: buildFallbackReply(message, session, "tool_call_no_context")
-          };
-        }
-
-        const functionResult = context
-          ? {
-              status: context.status,
-              track: context.track,
-              mentor: context.mentor,
-              link: context.mentorLink,
-              alternative: context.alternative
-            }
-          : checkMentorCapacity(requestedTrack);
-
-        interaction = await aiClient.interactions.create({
-          model: modelName,
-          previous_interaction_id: interaction.id,
-          input: [
-            {
-              type: "function_result",
-              name: functionCall.name,
-              call_id: functionCall.id,
-              result: functionResult
-            }
-          ],
-          ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
-        });
-
-        addUsage(requestUsage, interaction);
-
-        if (!hasUsableInteractionText(interaction)) {
-          logChatSource("FALLBACK", "empty_gemma_response_after_tool");
-          return {
-            statusCode: 200,
-            payload: buildFallbackReply(message, session, "empty_gemma_response_after_tool")
-          };
-        }
-
-        const replyText = cleanReplyText(extractInteractionText(interaction), context?.mentorLink);
-
-        if (context) {
-          logChatSource(
-            "GEMMA",
-            context.status === "success" ? "tool_call_success_response" : "tool_call_full_response"
-          );
-          return {
-            statusCode: 200,
-            payload: {
-              ...buildReplyFromContext(context, replyText),
-              decision: {
-                track: context.track,
-                level: context.level,
-                reasoning,
-                decidedBy: "gemma"
-              },
-              source: "gemini",
-              reason:
-                context.status === "success" ? "tool_call_success_response" : "tool_call_full_response"
-            }
-          };
-        }
-
-        logChatSource("GEMMA", "tool_call_no_context");
-        return {
-          statusCode: 200,
-          payload: {
-            reply: replyText,
-            status: "agent",
-            week1Actions: [],
-            source: "gemini",
-            reason: "tool_call_no_context"
-          }
-        };
-      }
-
       if (!hasUsableInteractionText(interaction)) {
-        logChatSource("FALLBACK", "empty_gemma_response_no_tool");
+        logChatSource("FALLBACK", "empty_gemma_response");
         return {
           statusCode: 200,
-          payload: buildFallbackReply(message, session, "empty_gemma_response_no_tool")
+          payload: buildFallbackReply(message, session, "empty_gemma_response")
         };
       }
 
-      // Gemma answered directly without calling check_mentor_capacity this
-      // turn. Ground it from the message OR, importantly, from the
-      // session's already-established track - so a follow-up question
-      // that doesn't repeat the track's name still keeps its mentor
-      // link/curriculum attached instead of silently losing them.
-      const context = resolveGroundedContext(message, session);
-      const replyText = cleanReplyText(extractInteractionText(interaction), context?.mentorLink);
+      const replyText = cleanReplyText(
+        extractInteractionText(interaction),
+        context?.mentorLink
+      );
 
       if (context) {
-        logChatSource("GEMMA", "direct_response_grounded");
+        logChatSource("GEMMA", "grounded_compose");
         return {
           statusCode: 200,
           payload: {
@@ -484,15 +368,15 @@ function createChatService({
               track: context.track,
               level: context.level,
               reasoning: null,
-              decidedBy: "fallback_inference"
+              decidedBy: "inference"
             },
             source: "gemini",
-            reason: "direct_response_grounded"
+            reason: "grounded_compose"
           }
         };
       }
 
-      logChatSource("GEMMA", "direct_response");
+      logChatSource("GEMMA", "compose_no_context");
       return {
         statusCode: 200,
         payload: {
@@ -500,7 +384,7 @@ function createChatService({
           status: "agent",
           week1Actions: [],
           source: "gemini",
-          reason: "direct_response"
+          reason: "compose_no_context"
         }
       };
     } catch (error) {
@@ -530,17 +414,14 @@ function createChatService({
     }
   }
 
-  async function generateReply(message, sessionId) {
-    const requestUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
-    const result = await generateReplyInner(message, sessionId, requestUsage);
-
+  function finalizePayload(payload, requestUsage) {
     totalTokensUsed += requestUsage.totalTokens;
     const tokensLeft =
       tokenBudget != null ? Math.max(tokenBudget - totalTokensUsed, 0) : null;
 
-    result.payload = {
-      ...result.payload,
-      ...(result.payload.track ? {} : { trackOptions: getTrackOptions() }),
+    return {
+      ...payload,
+      ...(payload.track ? {} : { trackOptions: getTrackOptions() }),
       usage: {
         requestTokens: requestUsage.totalTokens,
         requestInputTokens: requestUsage.inputTokens,
@@ -550,11 +431,106 @@ function createChatService({
         tokensLeft
       }
     };
+  }
 
+  async function generateReply(message, sessionId) {
+    const requestUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+    const result = await generateReplyInner(message, sessionId, requestUsage);
+    result.payload = finalizePayload(result.payload, requestUsage);
     return result;
   }
 
-  return { generateReply };
+  // Streaming variant of grounded compose: resolve the grounded facts, then
+  // stream the thinking model's composed reply token-by-token via onDelta.
+  // Returns the finalized payload (reply + cards + usage) once complete.
+  async function streamReply(message, sessionId, onDelta) {
+    const requestUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+    const session = getOrCreateSession(sessionId);
+
+    if (!aiClient) {
+      logChatSource("FALLBACK", "missing_api_key");
+      return finalizePayload(
+        {
+          reply: "GEMINI_API_KEY is not configured on the backend.",
+          source: "fallback",
+          reason: "missing_api_key"
+        },
+        requestUsage
+      );
+    }
+
+    const context = resolveGroundedContext(message, session);
+
+    try {
+      const stream = await aiClient.interactions.create({
+        model: modelName,
+        input: buildComposeInput(message, context),
+        system_instruction: buildSystemInstruction(),
+        stream: true,
+        ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
+      });
+
+      let rawText = "";
+      for await (const event of stream) {
+        if (
+          event?.event_type === "step.delta" &&
+          event.delta?.type === "text" &&
+          typeof event.delta.text === "string"
+        ) {
+          rawText += event.delta.text;
+          onDelta(event.delta.text);
+        }
+
+        const usage = event?.metadata?.total_usage || event?.interaction?.usage;
+        if (usage) {
+          requestUsage.inputTokens = usage.total_input_tokens || requestUsage.inputTokens;
+          requestUsage.outputTokens = usage.total_output_tokens || requestUsage.outputTokens;
+          requestUsage.totalTokens = usage.total_tokens || requestUsage.totalTokens;
+        }
+      }
+
+      const replyText = cleanReplyText(rawText, context?.mentorLink);
+
+      if (context) {
+        logChatSource("GEMMA", "grounded_compose_stream");
+        return finalizePayload(
+          {
+            ...buildReplyFromContext(context, replyText),
+            decision: {
+              track: context.track,
+              level: context.level,
+              reasoning: null,
+              decidedBy: "inference"
+            },
+            source: "gemini",
+            reason: "grounded_compose_stream"
+          },
+          requestUsage
+        );
+      }
+
+      logChatSource("GEMMA", "compose_no_context_stream");
+      return finalizePayload(
+        {
+          reply: replyText,
+          status: "agent",
+          week1Actions: [],
+          source: "gemini",
+          reason: "compose_no_context_stream"
+        },
+        requestUsage
+      );
+    } catch (error) {
+      console.error("POST /api/chat/stream failed:", error);
+      logChatSource("FALLBACK", "gemma_request_failed");
+      return finalizePayload(
+        buildFallbackReply(message, session, "gemma_request_failed"),
+        requestUsage
+      );
+    }
+  }
+
+  return { generateReply, streamReply };
 }
 
 module.exports = { createChatService };
