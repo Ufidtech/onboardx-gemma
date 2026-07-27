@@ -14,5 +14,14 @@ test("checkMentorCapacityTool supports all expected tracks", () => {
     "Frontend",
     "Backend",
     "Project Management",
+    "Cloud Computing",
+    "Data Analytics",
+    "AI / Machine Learning",
+    "Android / Mobile Development",
+    "UI/UX Design",
+    "Cybersecurity",
+    "DevOps / SRE",
+    "IT Support",
+    "Digital Marketing",
   ]);
 });

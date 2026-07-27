@@ -234,6 +234,639 @@ const STARTER_PACKS = {
         task: "Volunteer to run one real standup or retro for a GDGoC project team, or lead a Solution Challenge sub-team."
       }
     ]
+  },
+  "Cloud Computing": {
+    beginner: [
+      {
+        title: "Week 1 — Cloud Fundamentals",
+        focus: "Compute, storage, networking, and the Google Cloud console.",
+        resources: [
+          "Google Cloud Skills Boost — https://www.cloudskillsboost.google/",
+          "Google Cloud free tier — https://cloud.google.com/free"
+        ],
+        task: "Create a Google Cloud account and complete your first Skills Boost lab."
+      },
+      {
+        title: "Week 2 — Deploy Something",
+        focus: "Getting a small app or static site live on Google Cloud.",
+        resources: [
+          "Cloud Run quickstart — https://cloud.google.com/run/docs/quickstarts"
+        ],
+        task: "Deploy a simple static site or small app using Cloud Run's free tier."
+      },
+      {
+        title: "Week 3 — IAM & Security Basics",
+        focus: "Users, roles, and permissions in a cloud environment.",
+        resources: [
+          "Google Cloud Skills Boost — https://www.cloudskillsboost.google/"
+        ],
+        task: "Complete a Skills Boost lab focused on IAM basics."
+      },
+      {
+        title: "Week 4 — Earn a Badge",
+        focus: "Completing a full learning path end-to-end.",
+        resources: [
+          "Google Cloud learning paths — https://cloud.google.com/learn/training/machinelearning-ai"
+        ],
+        task: "Complete one full Skills Boost learning path and earn your first skill badge."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — Containers",
+        focus: "Working with containers on Google Cloud.",
+        resources: [
+          "Cloud Run quickstart — https://cloud.google.com/run/docs/quickstarts"
+        ],
+        task: "Containerize an existing app and deploy it to Cloud Run."
+      },
+      {
+        title: "Week 2 — Infrastructure as Code",
+        focus: "Managing cloud resources with code instead of clicking.",
+        resources: [
+          "Google Cloud Skills Boost — https://www.cloudskillsboost.google/"
+        ],
+        task: "Complete a Skills Boost lab on infrastructure automation."
+      },
+      {
+        title: "Week 3 — Monitoring & Cost",
+        focus: "Keeping a deployed service healthy and affordable.",
+        resources: [
+          "Google Cloud free tier — https://cloud.google.com/free"
+        ],
+        task: "Set up basic monitoring and a budget alert for your deployed project."
+      },
+      {
+        title: "Week 4 — Go Deeper",
+        focus: "Applying cloud skills to a real learning path.",
+        resources: [
+          "Google Cloud learning paths — https://cloud.google.com/learn/training/machinelearning-ai"
+        ],
+        task: "Complete an intermediate Skills Boost learning path relevant to your interests."
+      }
+    ]
+  },
+  "Data Analytics": {
+    beginner: [
+      {
+        title: "Week 1 — Spreadsheets & SQL Basics",
+        focus: "Foundational tools every data analyst uses.",
+        resources: [
+          "Google Data Analytics Certificate — https://www.coursera.org/professional-certificates/google-data-analytics"
+        ],
+        task: "Complete the first course of the Google Data Analytics Certificate on Coursera."
+      },
+      {
+        title: "Week 2 — Cleaning & Organizing Data",
+        focus: "Getting messy real-world data ready for analysis.",
+        resources: [
+          "Google Data Analytics Certificate — https://www.coursera.org/professional-certificates/google-data-analytics"
+        ],
+        task: "Clean a real, messy public dataset and document your process."
+      },
+      {
+        title: "Week 3 — Visualization",
+        focus: "Turning cleaned data into a clear visual story.",
+        resources: [
+          "Looker Studio — https://lookerstudio.google.com/"
+        ],
+        task: "Build your first dashboard in Looker Studio from a real dataset."
+      },
+      {
+        title: "Week 4 — Present Findings",
+        focus: "Communicating insights clearly to a non-technical audience.",
+        resources: [
+          "Google Data Analytics Certificate — https://www.coursera.org/professional-certificates/google-data-analytics"
+        ],
+        task: "Present your dashboard and findings to the community for feedback."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — Advanced SQL",
+        focus: "Window functions, subqueries, and more complex queries.",
+        resources: [
+          "Google Cloud Data Analytics Certificate — https://www.coursera.org/professional-certificates/google-cloud-data-analytics-certificate"
+        ],
+        task: "Rewrite a basic query from earlier using window functions or subqueries."
+      },
+      {
+        title: "Week 2 — Statistics Fundamentals",
+        focus: "The statistical thinking behind good analysis.",
+        resources: [
+          "Google Advanced Data Analytics Certificate — https://www.coursera.org/professional-certificates/google-advanced-data-analytics"
+        ],
+        task: "Run a basic statistical test on a real dataset and interpret the result."
+      },
+      {
+        title: "Week 3 — Python or R for Analysis",
+        focus: "Scaling beyond spreadsheets.",
+        resources: [
+          "Google Advanced Data Analytics Certificate — https://www.coursera.org/professional-certificates/google-advanced-data-analytics"
+        ],
+        task: "Reproduce one of your earlier spreadsheet analyses in Python or R."
+      },
+      {
+        title: "Week 4 — Full Analysis & Recommendation",
+        focus: "Going from data to a clear business recommendation.",
+        resources: [
+          "Google Cloud Data Analytics Certificate — https://www.coursera.org/professional-certificates/google-cloud-data-analytics-certificate"
+        ],
+        task: "Produce a short written analysis with a clear, data-backed recommendation."
+      }
+    ]
+  },
+  "AI / Machine Learning": {
+    beginner: [
+      {
+        title: "Week 1 — ML Fundamentals",
+        focus: "Core concepts: features, labels, loss, training.",
+        resources: [
+          "Google Machine Learning Crash Course — https://developers.google.com/machine-learning/crash-course"
+        ],
+        task: "Complete the first modules of Google's Machine Learning Crash Course."
+      },
+      {
+        title: "Week 2 — Your First Model",
+        focus: "Linear regression and classification basics.",
+        resources: [
+          "Google Machine Learning Crash Course — https://developers.google.com/machine-learning/crash-course"
+        ],
+        task: "Train a simple regression or classification model on a small dataset."
+      },
+      {
+        title: "Week 3 — Working with Real Data",
+        focus: "Getting hands-on with a real dataset and community.",
+        resources: [
+          "Kaggle — https://www.kaggle.com/"
+        ],
+        task: "Create a Kaggle account and explore a beginner-friendly dataset."
+      },
+      {
+        title: "Week 4 — Enter a Competition",
+        focus: "Applying what you've learned in a real, low-stakes setting.",
+        resources: [
+          "Kaggle — https://www.kaggle.com/",
+          "Google Machine Learning Crash Course — https://developers.google.com/machine-learning/crash-course"
+        ],
+        task: "Submit an entry to a beginner-friendly Kaggle competition, even if it's not your best score."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — Neural Networks",
+        focus: "Moving from linear models to neural networks.",
+        resources: [
+          "Google Machine Learning Crash Course — https://developers.google.com/machine-learning/crash-course"
+        ],
+        task: "Complete the neural network modules of the Machine Learning Crash Course."
+      },
+      {
+        title: "Week 2 — A Real ML Framework",
+        focus: "Building and training with TensorFlow.",
+        resources: [
+          "Google Cloud ML & AI training — https://cloud.google.com/learn/training/machinelearning-ai"
+        ],
+        task: "Follow a TensorFlow tutorial and train a model beyond the basics."
+      },
+      {
+        title: "Week 3 — Evaluation & Overfitting",
+        focus: "Making sure your model actually generalizes.",
+        resources: [
+          "Google Machine Learning Crash Course — https://developers.google.com/machine-learning/crash-course"
+        ],
+        task: "Evaluate your model properly and address any overfitting you find."
+      },
+      {
+        title: "Week 4 — Go Further",
+        focus: "Applying ML skills toward a real certification path.",
+        resources: [
+          "Google Cloud Professional ML Engineer path — https://www.skills.google/paths/17"
+        ],
+        task: "Start the Google Cloud Professional Machine Learning Engineer learning path."
+      }
+    ]
+  },
+  "Android / Mobile Development": {
+    beginner: [
+      {
+        title: "Week 1 — Kotlin & Compose Basics",
+        focus: "The language and toolkit behind modern Android apps.",
+        resources: [
+          "Android Developers — Get Started — https://developer.android.com/courses",
+          "Jetpack Compose course — https://developer.android.com/courses/jetpack-compose/course"
+        ],
+        task: "Complete the first unit of the Jetpack Compose course."
+      },
+      {
+        title: "Week 2 — Layouts & State",
+        focus: "Building real screens with composables.",
+        resources: [
+          "Jetpack Compose course — https://developer.android.com/courses/jetpack-compose/course"
+        ],
+        task: "Build a simple multi-screen app with basic navigation."
+      },
+      {
+        title: "Week 3 — Material Design",
+        focus: "Making your app look and feel like a real Android app.",
+        resources: [
+          "Jetpack Compose course — https://developer.android.com/courses/jetpack-compose/course"
+        ],
+        task: "Apply Material Design components throughout your app."
+      },
+      {
+        title: "Week 4 — Ship Your First App",
+        focus: "Getting a working build others can actually run.",
+        resources: [
+          "Android Basics with Compose and Firebase — https://developer.android.com/courses/android-basics-compose-firebase/course"
+        ],
+        task: "Build and share a working APK or test build with the community."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — App Architecture",
+        focus: "Structuring a real, maintainable Android app.",
+        resources: [
+          "Android Developers — Get Started — https://developer.android.com/courses"
+        ],
+        task: "Refactor an existing app to follow a recommended architecture pattern."
+      },
+      {
+        title: "Week 2 — Firebase Integration",
+        focus: "Adding real backend services to your app.",
+        resources: [
+          "Android Basics with Compose and Firebase — https://developer.android.com/courses/android-basics-compose-firebase/course"
+        ],
+        task: "Connect your app to Firebase for auth or data storage."
+      },
+      {
+        title: "Week 3 — Accessibility & Testing",
+        focus: "Making your app usable by everyone, and provably correct.",
+        resources: [
+          "Android Developers — Get Started — https://developer.android.com/courses"
+        ],
+        task: "Add accessibility support and basic automated tests to your app."
+      },
+      {
+        title: "Week 4 — Publish a Test Build",
+        focus: "Getting real feedback on a real build.",
+        resources: [
+          "Android Developers — Get Started — https://developer.android.com/courses"
+        ],
+        task: "Share a test build of your app with the community for feedback."
+      }
+    ]
+  },
+  "UI/UX Design": {
+    beginner: [
+      {
+        title: "Week 1 — UX Fundamentals",
+        focus: "User research basics and the design process.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Complete the first course of the Google UX Design Certificate."
+      },
+      {
+        title: "Week 2 — Wireframing",
+        focus: "Low-fidelity prototyping basics.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Wireframe a simple app or website idea on paper or in Figma."
+      },
+      {
+        title: "Week 3 — Prototyping in Figma",
+        focus: "Turning wireframes into a clickable prototype.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Build a clickable prototype of your wireframe in Figma."
+      },
+      {
+        title: "Week 4 — Usability Testing",
+        focus: "Getting real feedback on your design.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Run a basic usability test with 2-3 people and document what you learn."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — Design Systems",
+        focus: "High-fidelity, consistent design at scale.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Build a small design system (colors, type, components) for a project."
+      },
+      {
+        title: "Week 2 — Accessibility in Design",
+        focus: "Designing for everyone, not just the average user.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Audit an existing design for accessibility issues and fix at least 3."
+      },
+      {
+        title: "Week 3 — User Interviews",
+        focus: "Getting and synthesizing real qualitative research.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Conduct 2-3 short user interviews and synthesize the findings."
+      },
+      {
+        title: "Week 4 — Case Study",
+        focus: "Presenting your work like a real portfolio piece.",
+        resources: [
+          "Google UX Design Certificate — https://www.coursera.org/professional-certificates/google-ux-design"
+        ],
+        task: "Write up a full case study of your project and share it for feedback."
+      }
+    ]
+  },
+  Cybersecurity: {
+    beginner: [
+      {
+        title: "Week 1 — Security Fundamentals",
+        focus: "Core concepts: CIA triad, common threats and vulnerabilities.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Complete the first course of the Google Cybersecurity Certificate."
+      },
+      {
+        title: "Week 2 — Networking & Linux Basics",
+        focus: "The technical foundation every security role needs.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Complete the networking and Linux command line modules."
+      },
+      {
+        title: "Week 3 — SQL for Security",
+        focus: "Querying logs and data like a security analyst.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Complete the SQL module and practice basic log queries."
+      },
+      {
+        title: "Week 4 — First Security Lab",
+        focus: "Applying what you've learned hands-on.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Complete a beginner hands-on lab or simulation from the certificate program."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — Threat Detection",
+        focus: "SIEM tools and identifying real threats.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Complete the SIEM tools module and practice with sample alerts."
+      },
+      {
+        title: "Week 2 — Security Automation",
+        focus: "Using Python to automate repetitive security tasks.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Write a small Python script that automates a basic security check."
+      },
+      {
+        title: "Week 3 — Incident Response",
+        focus: "What to do when something actually goes wrong.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Walk through a sample incident response scenario end-to-end."
+      },
+      {
+        title: "Week 4 — Case Study",
+        focus: "Applying everything to a full, realistic scenario.",
+        resources: [
+          "Google Cybersecurity Certificate — https://www.coursera.org/professional-certificates/google-cybersecurity/"
+        ],
+        task: "Complete a full hands-on case study lab from the certificate program."
+      }
+    ]
+  },
+  "DevOps / SRE": {
+    beginner: [
+      {
+        title: "Week 1 — Linux & Shell Basics",
+        focus: "The command-line foundation for DevOps work.",
+        resources: [
+          "Google SRE resource hub — https://sre.google/resources/"
+        ],
+        task: "Practice shell scripting by automating one repetitive local task."
+      },
+      {
+        title: "Week 2 — Containers",
+        focus: "Packaging apps consistently with Docker.",
+        resources: [
+          "Cloud Run quickstart — https://cloud.google.com/run/docs/quickstarts"
+        ],
+        task: "Containerize a simple app and run it locally with Docker."
+      },
+      {
+        title: "Week 3 — CI Basics",
+        focus: "Automating builds and tests on every change.",
+        resources: [
+          "Google Cloud Build quickstart — https://cloud.google.com/build/docs/quickstarts"
+        ],
+        task: "Set up a basic CI pipeline that runs tests on every push."
+      },
+      {
+        title: "Week 4 — Monitoring Basics",
+        focus: "Knowing when something is actually wrong.",
+        resources: [
+          "Google SRE book — https://sre.google/sre-book/introduction/"
+        ],
+        task: "Add basic logging or monitoring to a deployed project."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — CI/CD Pipeline Design",
+        focus: "Going from CI to full continuous deployment.",
+        resources: [
+          "Google Cloud Build quickstart — https://cloud.google.com/build/docs/quickstarts"
+        ],
+        task: "Extend an existing CI pipeline to deploy automatically on merge."
+      },
+      {
+        title: "Week 2 — SRE Fundamentals",
+        focus: "SLIs, SLOs, and error budgets - the language of reliability.",
+        resources: [
+          "Google SRE book — https://sre.google/sre-book/introduction/"
+        ],
+        task: "Define an SLI and SLO for a project you maintain."
+      },
+      {
+        title: "Week 3 — Infrastructure as Code",
+        focus: "Managing infrastructure the reproducible way.",
+        resources: [
+          "Google Cloud Skills Boost — https://www.cloudskillsboost.google/"
+        ],
+        task: "Define one piece of your infrastructure as code instead of manual setup."
+      },
+      {
+        title: "Week 4 — Postmortems",
+        focus: "Learning from incidents without blame.",
+        resources: [
+          "Google SRE Workbook — https://sre.google/resources/"
+        ],
+        task: "Write a blameless postmortem for a real or simulated incident."
+      }
+    ]
+  },
+  "IT Support": {
+    beginner: [
+      {
+        title: "Week 1 — Computer & OS Fundamentals",
+        focus: "The basics every IT support role starts with.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Complete the first course of the Google IT Support Certificate."
+      },
+      {
+        title: "Week 2 — Networking Basics",
+        focus: "IP addressing, DNS, and troubleshooting connections.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Complete the networking module and practice basic troubleshooting steps."
+      },
+      {
+        title: "Week 3 — System Administration",
+        focus: "Managing users, permissions, and systems.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Complete the system administration module."
+      },
+      {
+        title: "Week 4 — Realistic Tickets",
+        focus: "Applying everything to real support scenarios.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Work through a set of realistic support tickets from the certificate program."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — Security for IT Support",
+        focus: "Keeping systems and users safe.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Complete the IT security module."
+      },
+      {
+        title: "Week 2 — Automation Basics",
+        focus: "Scripting your way out of repetitive tasks.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Write a basic script that automates a repetitive support task."
+      },
+      {
+        title: "Week 3 — Directory Services",
+        focus: "Managing users and access at scale.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Complete the directory services module."
+      },
+      {
+        title: "Week 4 — Full Scenario",
+        focus: "Handling a complete, realistic support case.",
+        resources: [
+          "Google IT Support Certificate — https://www.coursera.org/professional-certificates/google-it-support"
+        ],
+        task: "Handle a full, multi-step realistic support scenario end-to-end."
+      }
+    ]
+  },
+  "Digital Marketing": {
+    beginner: [
+      {
+        title: "Week 1 — Digital Marketing Fundamentals",
+        focus: "The landscape of digital marketing and e-commerce.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Complete the first course of the Google Digital Marketing & E-commerce Certificate."
+      },
+      {
+        title: "Week 2 — Social Media & Content",
+        focus: "Building an audience and creating content that works.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Draft a simple content calendar for a hypothetical brand."
+      },
+      {
+        title: "Week 3 — SEO Basics",
+        focus: "Getting found in search.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Do a basic SEO audit of a real or hypothetical website."
+      },
+      {
+        title: "Week 4 — First Marketing Plan",
+        focus: "Bringing it all together into a real plan.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Write a simple marketing plan for a real or hypothetical small business."
+      }
+    ],
+    intermediate: [
+      {
+        title: "Week 1 — Analytics",
+        focus: "Measuring what's actually working.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Set up basic analytics tracking for a real or hypothetical campaign."
+      },
+      {
+        title: "Week 2 — Paid Search & Social",
+        focus: "Running paid campaigns effectively.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Draft a small paid campaign brief with targeting and budget."
+      },
+      {
+        title: "Week 3 — E-commerce Fundamentals",
+        focus: "Turning traffic into sales.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Map out a basic e-commerce funnel for a product idea."
+      },
+      {
+        title: "Week 4 — Present a Campaign",
+        focus: "Bringing everything together with real metrics.",
+        resources: [
+          "Google Digital Marketing & E-commerce Certificate — https://www.coursera.org/professional-certificates/google-digital-marketing-ecommerce"
+        ],
+        task: "Present a full campaign plan with goals, channels, and success metrics."
+      }
+    ]
   }
 };
 

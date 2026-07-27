@@ -64,6 +64,150 @@ const TRACKS = {
       "Lead a real sprint retro and present outcomes",
     ],
   },
+  "Cloud Computing": {
+    beginner: [
+      "Cloud fundamentals: compute, storage, networking",
+      "Intro to Google Cloud Console & the free tier",
+      "Deploy a static site or small app to the cloud",
+      "IAM basics: users, roles, permissions",
+      "Earn your first Google Cloud Skills Boost badge",
+    ],
+    intermediate: [
+      "Container basics with Cloud Run",
+      "Infrastructure as Code fundamentals",
+      "Monitoring & logging a deployed service",
+      "Cost management & budget alerts",
+      "Complete a Cloud Skills Boost learning path end-to-end",
+    ],
+  },
+  "Data Analytics": {
+    beginner: [
+      "Spreadsheets for analysis: pivot tables & formulas",
+      "SQL fundamentals: SELECT, JOIN, GROUP BY",
+      "Data cleaning & organizing basics",
+      "Intro to data visualization",
+      "Build a first dashboard from a real dataset",
+    ],
+    intermediate: [
+      "Advanced SQL: window functions & subqueries",
+      "Statistical analysis fundamentals",
+      "Python or R for data analysis",
+      "Building shareable, interactive dashboards",
+      "Present a full analysis with clear recommendations",
+    ],
+  },
+  "AI / Machine Learning": {
+    beginner: [
+      "Python fundamentals for ML",
+      "Core ML concepts: features, labels, loss",
+      "Linear regression from scratch",
+      "Intro to classification models",
+      "Train and evaluate a first model on a real dataset",
+    ],
+    intermediate: [
+      "Neural network fundamentals",
+      "Working with a real ML framework (TensorFlow)",
+      "Model evaluation & avoiding overfitting",
+      "Intro to working with pretrained models",
+      "Enter a beginner-friendly Kaggle competition",
+    ],
+  },
+  "Android / Mobile Development": {
+    beginner: [
+      "Kotlin fundamentals",
+      "Jetpack Compose basics: composables & layouts",
+      "State & simple navigation in an app",
+      "Material Design basics",
+      "Build and run your first Android app",
+    ],
+    intermediate: [
+      "App architecture & state management patterns",
+      "Working with Firebase in an Android app",
+      "Accessibility & testing basics",
+      "Performance basics for mobile apps",
+      "Publish a working app build for others to test",
+    ],
+  },
+  "UI/UX Design": {
+    beginner: [
+      "UX fundamentals: user research basics",
+      "Wireframing & low-fidelity prototyping",
+      "Intro to Figma",
+      "Basic usability testing",
+      "Design a first end-to-end user flow",
+    ],
+    intermediate: [
+      "High-fidelity prototyping & design systems",
+      "Accessibility in design",
+      "Conducting and synthesizing user interviews",
+      "Portfolio case study basics",
+      "Present a full case study for feedback",
+    ],
+  },
+  Cybersecurity: {
+    beginner: [
+      "Security fundamentals: CIA triad, common threats",
+      "Networking basics for security",
+      "Linux command line fundamentals",
+      "Intro to SQL for security analysis",
+      "Complete a beginner security lab/simulation",
+    ],
+    intermediate: [
+      "Threat detection & SIEM basics",
+      "Python scripting for security automation",
+      "Incident response fundamentals",
+      "Vulnerability assessment basics",
+      "Complete a hands-on security case study",
+    ],
+  },
+  "DevOps / SRE": {
+    beginner: [
+      "Linux & shell scripting fundamentals",
+      "Version control & CI basics",
+      "Intro to containers (Docker)",
+      "Basic monitoring & alerting concepts",
+      "Automate one real deployment step",
+    ],
+    intermediate: [
+      "CI/CD pipeline design",
+      "SRE fundamentals: SLIs, SLOs, error budgets",
+      "Infrastructure as Code",
+      "Incident response & postmortems",
+      "Read and reflect on a real SRE case study",
+    ],
+  },
+  "IT Support": {
+    beginner: [
+      "Computer & OS fundamentals",
+      "Networking basics: IP, DNS, troubleshooting",
+      "Customer service fundamentals for IT",
+      "System administration basics",
+      "Resolve a set of realistic support tickets",
+    ],
+    intermediate: [
+      "Security fundamentals for IT support",
+      "Automation basics with scripting",
+      "Directory services & user management",
+      "Advanced troubleshooting methodology",
+      "Handle a full realistic support scenario end-to-end",
+    ],
+  },
+  "Digital Marketing": {
+    beginner: [
+      "Digital marketing fundamentals",
+      "Social media & content basics",
+      "Intro to SEO",
+      "Email marketing basics",
+      "Build a first simple marketing plan",
+    ],
+    intermediate: [
+      "Analytics & measuring campaign performance",
+      "Paid search & social ads fundamentals",
+      "E-commerce fundamentals",
+      "A/B testing basics",
+      "Present a full campaign plan with metrics",
+    ],
+  },
 };
 
 const DEFAULT_TRACK = "Frontend";

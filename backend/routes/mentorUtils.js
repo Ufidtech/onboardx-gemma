@@ -18,6 +18,20 @@ function buildMentorContext() {
     .join("\n");
 }
 
+function findBestAlternativeMentor(excludeTrackLower) {
+  const candidates = mentors.filter(
+    (m) => m.track.toLowerCase() !== excludeTrackLower && m.seatsAvailable > 0
+  );
+
+  if (candidates.length === 0) return null;
+
+  // Prefer whichever mentor has the most free capacity, to naturally spread
+  // load across mentors rather than always suggesting the same one.
+  return candidates.reduce((best, current) =>
+    current.seatsAvailable > best.seatsAvailable ? current : best
+  );
+}
+
 function checkMentorCapacity(track) {
   const normalizedTrack = String(track || "").trim().toLowerCase();
   const mentor = mentors.find(
@@ -35,26 +49,50 @@ function checkMentorCapacity(track) {
     };
   }
 
+  // Requested track has no capacity (or doesn't exist). Instead of leaving
+  // the user with only the self-guided fallback, check whether a different
+  // track has real, live capacity right now and surface it as a named
+  // alternative. This is a stateless, deterministic lookup - no new
+  // persistence, nothing that can fail across requests.
+  const alternative = findBestAlternativeMentor(normalizedTrack);
+
   return {
     status: "full",
     track: track || null,
-    message: "No seats available. Initiate self-guided track."
+    message: "No seats available. Initiate self-guided track.",
+    alternative: alternative
+      ? {
+          track: alternative.track,
+          mentor: alternative.name,
+          link: alternative.contactLink,
+          seatsAvailable: alternative.seatsAvailable
+        }
+      : null
   };
 }
+
+const TRACK_PATTERNS = [
+  { track: "Cloud Computing", patterns: [/cloud computing/, /google cloud/, /\bgcp\b/, /\bcloud\b/] },
+  { track: "AI / Machine Learning", patterns: [/machine learning/, /artificial intelligence/, /deep learning/, /\bml\b/, /\bai\b/] },
+  { track: "Android / Mobile Development", patterns: [/android/, /mobile development/, /mobile app/, /\bkotlin\b/] },
+  { track: "UI/UX Design", patterns: [/ux design/, /ui design/, /user experience/, /\bfigma\b/, /\bux\b/, /\bui\b/] },
+  { track: "Cybersecurity", patterns: [/cybersecurity/, /cyber security/] },
+  { track: "DevOps / SRE", patterns: [/devops/, /site reliability/, /\bsre\b/] },
+  { track: "IT Support", patterns: [/it support/, /tech support/, /help ?desk/] },
+  { track: "Digital Marketing", patterns: [/digital marketing/, /\bseo\b/, /social media marketing/] },
+  { track: "Data Analytics", patterns: [/data analytics/, /data analysis/, /data analyst/, /\bsql\b/] },
+  { track: "Frontend", patterns: [/frontend/, /front-end/, /front end/] },
+  { track: "Backend", patterns: [/backend/, /back-end/, /back end/] },
+  { track: "Project Management", patterns: [/project management/, /project/] }
+];
 
 function inferTrackFromMessage(message) {
   const normalizedMessage = String(message || "").toLowerCase();
 
-  if (normalizedMessage.includes("frontend")) {
-    return "Frontend";
-  }
-
-  if (normalizedMessage.includes("backend")) {
-    return "Backend";
-  }
-
-  if (normalizedMessage.includes("project")) {
-    return "Project Management";
+  for (const { track, patterns } of TRACK_PATTERNS) {
+    if (patterns.some((pattern) => pattern.test(normalizedMessage))) {
+      return track;
+    }
   }
 
   return null;
@@ -90,6 +128,7 @@ module.exports = {
   getMentorSnapshot,
   buildMentorContext,
   checkMentorCapacity,
+  findBestAlternativeMentor,
   inferTrackFromMessage,
   inferLevelFromMessage
 };

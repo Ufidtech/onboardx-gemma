@@ -29,6 +29,29 @@ test("falls back to sensible defaults for unknown track/level", () => {
   assert.ok(result.steps.length > 0);
 });
 
+test("all 12 supported tracks are present", () => {
+  const tracks = listAvailableTracks();
+  const expected = [
+    "Frontend",
+    "Backend",
+    "Project Management",
+    "Cloud Computing",
+    "Data Analytics",
+    "AI / Machine Learning",
+    "Android / Mobile Development",
+    "UI/UX Design",
+    "Cybersecurity",
+    "DevOps / SRE",
+    "IT Support",
+    "Digital Marketing"
+  ];
+
+  assert.equal(tracks.length, 12);
+  for (const track of expected) {
+    assert.ok(tracks.includes(track), `missing track: ${track}`);
+  }
+});
+
 test("estimatedWeeks matches the number of steps", () => {
   const result = generateLearningPath({ track: "Backend", level: "intermediate" });
   assert.equal(result.estimatedWeeks, result.steps.length);

@@ -38,7 +38,20 @@ test("generates a real, non-empty PDF buffer with a valid PDF header", async () 
 });
 
 test("PDF generation works for every known track/level combination", async () => {
-  const tracks = ["Frontend", "Backend", "Project Management"];
+  const tracks = [
+    "Frontend",
+    "Backend",
+    "Project Management",
+    "Cloud Computing",
+    "Data Analytics",
+    "AI / Machine Learning",
+    "Android / Mobile Development",
+    "UI/UX Design",
+    "Cybersecurity",
+    "DevOps / SRE",
+    "IT Support",
+    "Digital Marketing"
+  ];
   const levels = ["beginner", "intermediate"];
 
   for (const track of tracks) {

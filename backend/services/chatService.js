@@ -65,8 +65,11 @@ function buildSystemInstruction() {
     "self-guided track content; the mentor is community support alongside it.",
     "If check_mentor_capacity returns status 'success', that means the CURRENT user has",
     "just been matched successfully - say so plainly and do not contradict it by talking",
-    "about remaining seat counts. If a track is full, recommend the downloadable",
-    "self-guided starter pack instead.",
+    "about remaining seat counts. If a track is full, check whether the result includes",
+    "an 'alternative' mentor in a different track with real open capacity. If it does,",
+    "name that mentor and track as a genuine option before mentioning the self-guided",
+    "starter pack - do not present the alternative as the same track, and do not invent",
+    "an alternative yourself if the tool result did not provide one.",
     "Current mentor inventory:",
     buildMentorContext()
   ].join("\n");
@@ -92,7 +95,10 @@ function buildFallbackReply(message, reason = "fallback_response") {
   if (!track) {
     return {
       reply:
-        "I can help with Frontend, Backend, or Project Management. Tell me which track you want and I’ll match you with the right mentor.",
+        "I can help you find a mentor and a learning path across Frontend, Backend, " +
+          "Project Management, Cloud Computing, Data Analytics, AI/Machine Learning, " +
+          "Android/Mobile Development, UI/UX Design, Cybersecurity, DevOps/SRE, IT " +
+          "Support, or Digital Marketing. Tell me which one you're interested in.",
       source: "fallback",
       reason
     };
@@ -116,15 +122,20 @@ function buildFallbackReply(message, reason = "fallback_response") {
     };
   }
 
+  const altText = result.alternative
+    ? ` In the meantime, ${result.alternative.mentor} has open capacity for ${result.alternative.track} if you'd like to explore that instead.`
+    : "";
+
   return {
     reply:
-      "That track is currently full. Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.",
+      `That track is currently full.${altText} Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.`,
     status: "full",
     track,
     level: learningPath.level,
     week1Actions: learningPath.steps,
     estimatedWeeks: learningPath.estimatedWeeks,
     starterPackUrl: buildStarterPackUrl(track, learningPath.level),
+    alternative: result.alternative || null,
     source: "fallback",
     reason
   };
@@ -240,6 +251,7 @@ function createChatService({
             week1Actions: learningPath.steps,
             estimatedWeeks: learningPath.estimatedWeeks,
             starterPackUrl: buildStarterPackUrl(functionResult.track, learningPath.level),
+            alternative: functionResult.alternative || null,
             source: "gemini",
             reason: "tool_call_full_response"
           }
@@ -296,6 +308,7 @@ function createChatService({
             week1Actions: learningPath.steps,
             estimatedWeeks: learningPath.estimatedWeeks,
             starterPackUrl: buildStarterPackUrl(inferredTrack, learningPath.level),
+            alternative: result.alternative || null,
             source: "gemini",
             reason: "direct_response_grounded"
           }
