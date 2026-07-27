@@ -15,6 +15,11 @@ const INCLUDE_SOURCE = process.env.GEMINI_DEBUG_SOURCE === "true";
 const TOKEN_BUDGET = process.env.TOKEN_BUDGET
   ? Number(process.env.TOKEN_BUDGET)
   : 1000000;
+const THINKING_LEVEL = process.env.GEMMA_THINKING_LEVEL || null;
+const FAST_REPLY = process.env.GEMMA_FAST_REPLY !== "false";
+const MAX_OUTPUT_TOKENS = process.env.GEMMA_MAX_OUTPUT_TOKENS
+  ? Number(process.env.GEMMA_MAX_OUTPUT_TOKENS)
+  : null;
 
 const app = express();
 
@@ -34,7 +39,10 @@ app.use(
     strictGeminiApi: STRICT_GEMINI_API,
     includeSource: INCLUDE_SOURCE,
     checkMentorCapacityTool,
-    tokenBudget: TOKEN_BUDGET
+    tokenBudget: TOKEN_BUDGET,
+    thinkingLevel: THINKING_LEVEL,
+    fastReply: FAST_REPLY,
+    maxOutputTokens: MAX_OUTPUT_TOKENS
   })
 );
 

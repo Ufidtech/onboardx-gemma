@@ -285,9 +285,22 @@ function createChatService({
   modelName,
   strictGeminiApi,
   checkMentorCapacityTool,
-  tokenBudget = null
+  tokenBudget = null,
+  thinkingLevel = null,
+  fastReply = true,
+  maxOutputTokens = null
 }) {
   let totalTokensUsed = 0;
+
+  // A thinking model (Gemma 4) spends time generating internal reasoning
+  // tokens before answering. Some model variants reject an explicit
+  // thinking_level (400 "Thinking budget is not supported"), so it stays
+  // off unless GEMMA_THINKING_LEVEL is set for a model that supports it.
+  const generationConfig = {
+    ...(thinkingLevel ? { thinking_level: thinkingLevel } : {}),
+    ...(maxOutputTokens ? { max_output_tokens: maxOutputTokens } : {})
+  };
+  const hasGenerationConfig = Object.keys(generationConfig).length > 0;
 
   async function generateReplyInner(message, sessionId, requestUsage) {
     const session = getOrCreateSession(sessionId);
@@ -309,7 +322,8 @@ function createChatService({
         model: modelName,
         input: buildModelInput(message),
         tools: [checkMentorCapacityTool],
-        system_instruction: buildSystemInstruction()
+        system_instruction: buildSystemInstruction(),
+        ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
       });
 
       addUsage(requestUsage, interaction);
@@ -329,6 +343,41 @@ function createChatService({
           requestedTrack,
           requestedLevel
         );
+
+        // Fast path: Gemma already reasoned and decided on the first call
+        // (track/level/reasoning are in the tool call). Skip the expensive
+        // second round-trip and answer from the grounded deterministic
+        // reply, roughly halving matched-turn latency.
+        if (fastReply) {
+          if (context) {
+            const reason =
+              context.status === "success"
+                ? "tool_call_success_response"
+                : "tool_call_full_response";
+            logChatSource("GEMMA", reason);
+            return {
+              statusCode: 200,
+              payload: {
+                ...buildReplyFromContext(context),
+                decision: {
+                  track: context.track,
+                  level: context.level,
+                  reasoning,
+                  decidedBy: "gemma"
+                },
+                source: "gemini",
+                reason
+              }
+            };
+          }
+
+          logChatSource("FALLBACK", "tool_call_no_context");
+          return {
+            statusCode: 200,
+            payload: buildFallbackReply(message, session, "tool_call_no_context")
+          };
+        }
+
         const functionResult = context
           ? {
               status: context.status,
@@ -349,7 +398,8 @@ function createChatService({
               call_id: functionCall.id,
               result: functionResult
             }
-          ]
+          ],
+          ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
         });
 
         addUsage(requestUsage, interaction);

@@ -17,7 +17,10 @@ function createApiRouter(deps) {
       strictGeminiApi: deps.strictGeminiApi,
       includeSource: deps.includeSource,
       checkMentorCapacityTool: deps.checkMentorCapacityTool,
-      tokenBudget: deps.tokenBudget
+      tokenBudget: deps.tokenBudget,
+      thinkingLevel: deps.thinkingLevel,
+      fastReply: deps.fastReply,
+      maxOutputTokens: deps.maxOutputTokens
     })
   );
 
