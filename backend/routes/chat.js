@@ -7,7 +7,8 @@ function createChatRouter({
   modelName,
   strictGeminiApi,
   includeSource,
-  checkMentorCapacityTool
+  checkMentorCapacityTool,
+  tokenBudget
 }) {
   const router = express.Router();
 
@@ -16,7 +17,8 @@ function createChatRouter({
     modelName,
     strictGeminiApi,
     includeSource,
-    checkMentorCapacityTool
+    checkMentorCapacityTool,
+    tokenBudget
   });
   const postChat = createChatController({ chatService });
 

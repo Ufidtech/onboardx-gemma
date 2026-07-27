@@ -17,6 +17,8 @@ export default function App() {
   const [lastSource, setLastSource] = useState("gemini");
   const [lastReason, setLastReason] = useState("boot");
   const [activeModel, setActiveModel] = useState("loading...");
+  const [usage, setUsage] = useState(null);
+  const [decision, setDecision] = useState(null);
 
   useEffect(() => {
     let ignore = false;
@@ -49,6 +51,11 @@ export default function App() {
   }, [apiBaseUrl]);
 
   const handleSendMessage = async (content) => {
+    const history = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     setMessages((prev) => [...prev, { role: "user", content }]);
     setIsTyping(true);
 
@@ -56,7 +63,7 @@ export default function App() {
       const response = await fetch(`${apiBaseUrl}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({ message: content, history }),
       });
 
       if (!response.ok) {
@@ -66,6 +73,8 @@ export default function App() {
       const data = await response.json();
       setLastSource(data.source || "gemini");
       setLastReason(data.reason || "unknown");
+      setUsage(data.usage || null);
+      setDecision(data.decision || null);
       setMessages((prev) => [
         ...prev,
         {
@@ -77,6 +86,7 @@ export default function App() {
           mentorLink: data.mentorLink,
           track: data.track,
           week1Actions: data.week1Actions,
+          alternative: data.alternative,
           starterPackUrl: data.starterPackUrl
             ? `${apiBaseUrl}${data.starterPackUrl}`
             : undefined,
@@ -104,6 +114,8 @@ export default function App() {
             activeModel={activeModel}
             lastSource={lastSource}
             lastReason={lastReason}
+            usage={usage}
+            decision={decision}
           />
         )}
         <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />

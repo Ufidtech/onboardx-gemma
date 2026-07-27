@@ -12,6 +12,9 @@ const MODEL_NAME = process.env.GEMMA_MODEL || "gemma-4-26b-a4b-it";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const STRICT_GEMINI_API = process.env.GEMINI_STRICT === "true";
 const INCLUDE_SOURCE = process.env.GEMINI_DEBUG_SOURCE === "true";
+const TOKEN_BUDGET = process.env.TOKEN_BUDGET
+  ? Number(process.env.TOKEN_BUDGET)
+  : 1000000;
 
 const app = express();
 
@@ -30,7 +33,8 @@ app.use(
     modelName: MODEL_NAME,
     strictGeminiApi: STRICT_GEMINI_API,
     includeSource: INCLUDE_SOURCE,
-    checkMentorCapacityTool
+    checkMentorCapacityTool,
+    tokenBudget: TOKEN_BUDGET
   })
 );
 

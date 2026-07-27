@@ -1,3 +1,26 @@
+function renderBold(text, keyPrefix) {
+  const boldPattern = /\*\*([\s\S]+?)\*\*/g;
+  const segments = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = boldPattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push(text.slice(lastIndex, match.index));
+    }
+    segments.push(
+      <strong key={`${keyPrefix}-b-${match.index}`}>{match[1]}</strong>,
+    );
+    lastIndex = boldPattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push(text.slice(lastIndex));
+  }
+
+  return segments;
+}
+
 function renderContent(content) {
   const text = String(content ?? "");
   const urlPattern = /(https?:\/\/[^\s]+)/g;
@@ -20,7 +43,7 @@ function renderContent(content) {
 
     return (
       <span key={`${part}-${index}`} className="whitespace-pre-wrap">
-        {part}
+        {renderBold(part, index)}
       </span>
     );
   });
@@ -44,6 +67,7 @@ export default function MessageBubble({ message }) {
   const isUser = message.role === "user";
   const hasMentorLink = Boolean(message.mentorLink);
   const hasStarterPack = Boolean(message.starterPackUrl);
+  const hasAlternative = Boolean(message.alternative && message.alternative.mentor);
   const sourceLabel =
     message.source === "fallback"
       ? "Fallback"
@@ -85,6 +109,25 @@ export default function MessageBubble({ message }) {
             >
               {message.mentor || message.track || message.mentorLink}
             </a>
+          </div>
+        )}
+        {!isUser && hasAlternative && (
+          <div className="mt-3 rounded-md border border-[#cfd8dc] bg-[#f8fbfc] p-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Open capacity elsewhere
+            </div>
+            <a
+              href={message.alternative.link}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-block font-medium text-blue-700 underline break-all"
+            >
+              {message.alternative.mentor} — {message.alternative.track}
+            </a>
+            <div className="mt-1 text-xs text-gray-500">
+              {message.alternative.seatsAvailable} seat
+              {message.alternative.seatsAvailable === 1 ? "" : "s"} available
+            </div>
           </div>
         )}
         {!isUser && hasStarterPack && (

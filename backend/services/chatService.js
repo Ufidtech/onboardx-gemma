@@ -57,6 +57,11 @@ function buildSystemInstruction() {
     "Do not reveal private chain-of-thought. Give a concise answer that helps the user act quickly.",
     "If the user is vague, ask exactly one clarifying question.",
     "If the user wants a track with available seats, call check_mentor_capacity.",
+    "When you call check_mentor_capacity, YOU own the decision: read the user's",
+    "free-text message, classify it into exactly one track from the tool's enum,",
+    "infer their experience level (beginner or intermediate), and pass a one-sentence",
+    "'reasoning' explaining why. If the message already implies a track, decide it",
+    "yourself instead of asking the user to pick from a raw list.",
     "IMPORTANT - mentor framing: mentors are experienced community members who offer",
     "guidance, answer questions, and point the mentee in the right direction. They are",
     "NOT formal instructors running lessons or teaching a curriculum. Always frame a",
@@ -75,13 +80,55 @@ function buildSystemInstruction() {
   ].join("\n");
 }
 
-function buildModelInput(message) {
+function formatHistory(history) {
+  if (!Array.isArray(history)) {
+    return "";
+  }
+
+  return history
+    .filter((turn) => turn && typeof turn.content === "string" && turn.content.trim())
+    .map((turn) => {
+      const speaker = turn.role === "user" ? "User" : "Assistant";
+      return `${speaker}: ${turn.content.trim()}`;
+    })
+    .join("\n");
+}
+
+function inferTrackFromConversation(message, history = []) {
+  const current = inferTrackFromMessage(message);
+  if (current) {
+    return current;
+  }
+
+  if (!Array.isArray(history)) {
+    return null;
+  }
+
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const turn = history[i];
+    if (turn && turn.role === "user" && typeof turn.content === "string") {
+      const track = inferTrackFromMessage(turn.content);
+      if (track) {
+        return track;
+      }
+    }
+  }
+
+  return null;
+}
+
+function buildModelInput(message, history = []) {
+  const transcript = formatHistory(history);
+
   return [
     "Use the mentor inventory and app context below to answer the user helpfully.",
     "Prioritize the user goal, the available capacity, and the best next action.",
+    "Continue the ongoing conversation naturally. Do not re-ask for information the",
+    "user already gave you earlier in the conversation.",
     "",
     "App context:",
     buildMentorContext(),
+    ...(transcript ? ["", "Conversation so far:", transcript] : []),
     "",
     "User message:",
     message
@@ -164,13 +211,32 @@ function extractFunctionCall(interaction) {
   return fromSteps || null;
 }
 
+function extractUsage(interaction) {
+  const usage = interaction?.usage || {};
+  const inputTokens = usage.total_input_tokens || 0;
+  const outputTokens = usage.total_output_tokens || 0;
+  const totalTokens = usage.total_tokens || inputTokens + outputTokens;
+
+  return { inputTokens, outputTokens, totalTokens };
+}
+
+function addUsage(accumulator, interaction) {
+  const { inputTokens, outputTokens, totalTokens } = extractUsage(interaction);
+  accumulator.inputTokens += inputTokens;
+  accumulator.outputTokens += outputTokens;
+  accumulator.totalTokens += totalTokens;
+}
+
 function createChatService({
   aiClient,
   modelName,
   strictGeminiApi,
-  checkMentorCapacityTool
+  checkMentorCapacityTool,
+  tokenBudget = null
 }) {
-  async function generateReply(message) {
+  let totalTokensUsed = 0;
+
+  async function generateReplyInner(message, history, requestUsage) {
     if (!aiClient) {
       logChatSource("FALLBACK", "missing_api_key");
       return {
@@ -186,10 +252,12 @@ function createChatService({
     try {
       let interaction = await aiClient.interactions.create({
         model: modelName,
-        input: buildModelInput(message),
+        input: buildModelInput(message, history),
         tools: [checkMentorCapacityTool],
         system_instruction: buildSystemInstruction()
       });
+
+      addUsage(requestUsage, interaction);
 
       const functionCall = extractFunctionCall(interaction);
 
@@ -209,6 +277,8 @@ function createChatService({
           ]
         });
 
+        addUsage(requestUsage, interaction);
+
         if (!hasUsableInteractionText(interaction)) {
           logChatSource("FALLBACK", "empty_gemma_response_after_tool");
           return {
@@ -217,10 +287,22 @@ function createChatService({
           };
         }
 
+        const decidedLevel =
+          functionCall.arguments?.level === "intermediate"
+            ? "intermediate"
+            : functionCall.arguments?.level === "beginner"
+              ? "beginner"
+              : inferLevelFromMessage(message);
         const learningPath = generateLearningPath({
           track: functionResult.track,
-          level: inferLevelFromMessage(message)
+          level: decidedLevel
         });
+        const decision = {
+          track: functionResult.track,
+          level: learningPath.level,
+          reasoning: functionCall.arguments?.reasoning || null,
+          decidedBy: "gemma"
+        };
 
         if (functionResult.status === "success") {
           logChatSource("GEMMA", "tool_call_success_response");
@@ -236,6 +318,7 @@ function createChatService({
               week1Actions: learningPath.steps,
               estimatedWeeks: learningPath.estimatedWeeks,
               starterPackUrl: buildStarterPackUrl(functionResult.track, learningPath.level),
+              decision,
               source: "gemini",
               reason: "tool_call_success_response"
             }
@@ -254,6 +337,7 @@ function createChatService({
             estimatedWeeks: learningPath.estimatedWeeks,
             starterPackUrl: buildStarterPackUrl(functionResult.track, learningPath.level),
             alternative: functionResult.alternative || null,
+            decision,
             source: "gemini",
             reason: "tool_call_full_response"
           }
@@ -273,12 +357,18 @@ function createChatService({
       // infer a track from the message ourselves, still attach real, grounded
       // data (mentor link or starter pack) instead of leaving the user with only
       // whatever Gemma improvised in plain text.
-      const inferredTrack = inferTrackFromMessage(message);
+      const inferredTrack = inferTrackFromConversation(message, history);
 
       if (inferredTrack) {
         const level = inferLevelFromMessage(message);
         const learningPath = generateLearningPath({ track: inferredTrack, level });
         const result = checkMentorCapacity(inferredTrack);
+        const decision = {
+          track: inferredTrack,
+          level: learningPath.level,
+          reasoning: null,
+          decidedBy: "fallback_inference"
+        };
 
         logChatSource("GEMMA", "direct_response_grounded");
 
@@ -295,6 +385,7 @@ function createChatService({
               week1Actions: learningPath.steps,
               estimatedWeeks: learningPath.estimatedWeeks,
               starterPackUrl: buildStarterPackUrl(result.track, learningPath.level),
+              decision,
               source: "gemini",
               reason: "direct_response_grounded"
             }
@@ -312,6 +403,7 @@ function createChatService({
             estimatedWeeks: learningPath.estimatedWeeks,
             starterPackUrl: buildStarterPackUrl(inferredTrack, learningPath.level),
             alternative: result.alternative || null,
+            decision,
             source: "gemini",
             reason: "direct_response_grounded"
           }
@@ -354,6 +446,29 @@ function createChatService({
         payload: buildFallbackReply(message, "gemma_request_failed")
       };
     }
+  }
+
+  async function generateReply(message, history = []) {
+    const requestUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+    const result = await generateReplyInner(message, history, requestUsage);
+
+    totalTokensUsed += requestUsage.totalTokens;
+    const tokensLeft =
+      tokenBudget != null ? Math.max(tokenBudget - totalTokensUsed, 0) : null;
+
+    result.payload = {
+      ...result.payload,
+      usage: {
+        requestTokens: requestUsage.totalTokens,
+        requestInputTokens: requestUsage.inputTokens,
+        requestOutputTokens: requestUsage.outputTokens,
+        totalTokensUsed,
+        tokenBudget,
+        tokensLeft
+      }
+    };
+
+    return result;
   }
 
   return { generateReply };
