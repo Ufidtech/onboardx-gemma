@@ -223,3 +223,26 @@ test("streaming replies clean structured links without falling back", async () =
     assert.ok(!result.reply.includes("at to"));
     assert.ok(deltas.length > 0);
 });
+
+test("does not ask for a track when a grounded match is already attached", async () => {
+    const svc = createChatService({
+        aiClient: mockAiClientDirectResponse(
+            "No problem at all. Please tap on any of the tracks listed below to explore a different learning path."
+        ),
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const result = await svc.streamReply(
+        "I want to learn digital marketing",
+        "contradictory-match-session",
+        () => {}
+    );
+
+    assert.equal(result.track, "Digital Marketing");
+    assert.ok(result.mentor || result.starterPackUrl);
+    assert.ok(!result.reply.toLowerCase().includes("tap"));
+    assert.ok(!result.reply.toLowerCase().includes("tracks listed below"));
+    assert.ok(result.reply.includes("Digital Marketing"));
+});

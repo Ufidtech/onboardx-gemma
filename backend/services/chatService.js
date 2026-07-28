@@ -65,6 +65,13 @@ function cleanReplyText(text, links = []) {
   return cleaned.replace(/\b(?:at|via)\s+(?=to\b|[.,;:!?]|$)/gi, "").trim();
 }
 
+function contradictsGroundedMatch(text) {
+  return (
+    /\b(?:tap|choose|select|pick)\b.{0,60}\btracks?\b/i.test(text) ||
+    /\btracks?\b.{0,40}\b(?:below|listed)\b/i.test(text)
+  );
+}
+
 /**
  * Returns the grounded track context (mentor match + curriculum info) for
  * this turn, reusing an already-established session match instead of
@@ -121,9 +128,14 @@ function resolveGroundedContext(message, session, explicitTrack, explicitLevel) 
 }
 
 function buildReplyFromContext(context, textOverride) {
+  const groundedText =
+    textOverride && !contradictsGroundedMatch(textOverride)
+      ? textOverride
+      : null;
+
   if (context.status === "success") {
     return {
-      reply: textOverride || `You’re matched with ${context.mentor} for ${context.track}.`,
+      reply: groundedText || `You’re matched with ${context.mentor} for ${context.track}. Use the mentor link for guidance and start with the learning actions below.`,
       status: "success",
       track: context.track,
       level: context.level,
@@ -141,7 +153,7 @@ function buildReplyFromContext(context, textOverride) {
 
   return {
     reply:
-      textOverride ||
+      groundedText ||
       `That track is currently full.${altText} Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.`,
     status: "full",
     track: context.track,
@@ -212,6 +224,8 @@ function buildSystemInstruction() {
     "When you don't yet know the user's track and are inviting them to choose, do NOT",
     "list or name the tracks in your reply - the app shows every track as a tappable",
     "button right below your message. Just briefly invite the user to tap a track below.",
+    "Once a grounded mentor result exists, NEVER ask the user to tap, choose, or select",
+    "a track. Confirm the matched track and mentor, or explain that the track is full.",
     "Current mentor inventory:",
     buildMentorContext()
   ].join("\n");
