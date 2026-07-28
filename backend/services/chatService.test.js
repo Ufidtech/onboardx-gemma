@@ -198,3 +198,28 @@ test("strips the raw starter-pack URL from prose when the download card is shown
     assert.ok(!result.payload.reply.includes("at to"), "reply must not contain a dangling preposition");
     assert.ok(result.payload.reply.includes("Access your starter pack to get started."));
 });
+
+test("streaming replies clean structured links without falling back", async () => {
+    const svc = createChatService({
+        aiClient: mockAiClientDirectResponse(
+            "Your starter pack is at /api/resources/starter-pack?track=Backend&level=beginner to get started."
+        ),
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const deltas = [];
+    const result = await svc.streamReply(
+        "I want to learn backend",
+        "stream-link-test-session",
+        (delta) => deltas.push(delta)
+    );
+
+    assert.equal(result.source, "gemini");
+    assert.notEqual(result.reason, "gemma_request_failed");
+    assert.ok(result.starterPackUrl);
+    assert.ok(!result.reply.includes(result.starterPackUrl));
+    assert.ok(!result.reply.includes("at to"));
+    assert.ok(deltas.length > 0);
+});

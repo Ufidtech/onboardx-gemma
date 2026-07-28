@@ -54,7 +54,8 @@ function stripDuplicateLink(text, link) {
 }
 
 function cleanReplyText(text, links = []) {
-  const cleaned = links.reduce(
+  const normalizedLinks = Array.isArray(links) ? links : [links];
+  const cleaned = normalizedLinks.reduce(
     (reply, link) => stripDuplicateLink(reply, link),
     stripMarkdownEmphasis(text)
   );
@@ -592,7 +593,10 @@ function createChatService({
         }
       }
 
-      const replyText = cleanReplyText(rawText, context?.mentorLink);
+      const replyText = cleanReplyText(
+        rawText,
+        [context?.mentorLink, context?.starterPackUrl]
+      );
 
       if (context) {
         logChatSource("GEMMA", "grounded_compose_stream");
