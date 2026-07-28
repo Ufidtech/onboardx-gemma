@@ -44,6 +44,22 @@ test("never suggests the same track as the alternative", () => {
   }
 });
 
+test("prefers the LAST-mentioned track over an earlier passing mention", () => {
+  // A passing mention of "cloud computing" (about a cousin's job) should
+  // lose to the person's actual, later-stated interest in frontend - not
+  // win just because Cloud Computing happens to be first in the priority
+  // array. This is a real scenario found during testing: users ramble.
+  const result = inferTrackFromMessage(
+    "my cousin does cloud computing and honestly frontend maybe"
+  );
+  assert.equal(result, "Frontend");
+});
+
+test("picks the later track when pivoting mid-sentence", () => {
+  const result = inferTrackFromMessage("I did backend before but now I want frontend");
+  assert.equal(result, "Frontend");
+});
+
 test("infers each of the 12 supported tracks from natural phrasing", () => {
   const cases = [
     ["I want to learn frontend development", "Frontend"],

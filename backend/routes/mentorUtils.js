@@ -89,13 +89,25 @@ const TRACK_PATTERNS = [
 function inferTrackFromMessage(message) {
   const normalizedMessage = String(message || "").toLowerCase();
 
+  // When a message mentions more than one track (people genuinely ramble -
+  // "my cousin does cloud computing but honestly frontend maybe"), prefer
+  // whichever track is mentioned LAST in the text, not whichever happens to
+  // be first in this array. The last-mentioned thing is a much better proxy
+  // for someone's actual, current intent than an arbitrary priority order.
+  let bestTrack = null;
+  let bestIndex = -1;
+
   for (const { track, patterns } of TRACK_PATTERNS) {
-    if (patterns.some((pattern) => pattern.test(normalizedMessage))) {
-      return track;
+    for (const pattern of patterns) {
+      const match = normalizedMessage.match(pattern);
+      if (match && match.index > bestIndex) {
+        bestIndex = match.index;
+        bestTrack = track;
+      }
     }
   }
 
-  return null;
+  return bestTrack;
 }
 
 /**
