@@ -287,4 +287,4 @@ These are clear next steps for scaling the system.
 
 ## Credits
 
-Built by the GDGoC FUT Minna team for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.
+Built by team Gemma Duo: Two minds. One agent. Built for impact. for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.
