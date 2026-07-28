@@ -134,4 +134,4 @@ Try these in the app:
 
 ## Credits
 
-Built by the Gemma Duo Team Two minds. One agent. Built for impact. for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.
+Built by the Gemma Duo Team: Two minds. One agent. Built for impact. for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.
