@@ -38,11 +38,9 @@ function stripMarkdownEmphasis(text) {
 }
 
 /**
- * The frontend already renders the mentor's contact link in its own
- * dedicated "Mentor link" box. If Gemma also writes the raw URL out in its
- * prose, it shows up twice - once redundantly inline, once in the box.
- * Strip the exact URL (and light trailing punctuation) from the prose so
- * it only appears once, in the box where it belongs.
+ * The frontend already renders structured links in dedicated cards. If
+ * Gemma also writes a raw URL in its prose, it shows up twice. Strip the
+ * exact URL (and light trailing punctuation) so it only appears in the card.
  */
 function stripDuplicateLink(text, link) {
   if (!link) return text;
@@ -55,8 +53,15 @@ function stripDuplicateLink(text, link) {
     .trim();
 }
 
-function cleanReplyText(text, link) {
-  return stripDuplicateLink(stripMarkdownEmphasis(text), link);
+function cleanReplyText(text, links = []) {
+  const cleaned = links.reduce(
+    (reply, link) => stripDuplicateLink(reply, link),
+    stripMarkdownEmphasis(text)
+  );
+
+  // Removing a URL from phrases such as "at <url> to get started" can
+  // leave a dangling preposition. Keep the resulting prose natural.
+  return cleaned.replace(/\b(?:at|via)\s+(?=to\b|[.,;:!?]|$)/gi, "").trim();
 }
 
 /**
@@ -429,7 +434,7 @@ function createChatService({
 
       const replyText = cleanReplyText(
         extractInteractionText(interaction),
-        context?.mentorLink
+        [context?.mentorLink, context?.starterPackUrl]
       );
 
       if (context) {

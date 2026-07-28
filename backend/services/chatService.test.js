@@ -178,3 +178,23 @@ test("strips the mentor's raw link from prose when it's already shown in the ded
         "reply text must not repeat the exact same URL already shown in the mentor link box"
     );
 });
+
+test("strips the raw starter-pack URL from prose when the download card is shown", async () => {
+    const svc = createChatService({
+        aiClient: mockAiClientDirectResponse(
+            "I've matched you with Emeka. Access your starter pack at /api/resources/starter-pack?track=IT+Support&level=beginner to get started."
+        ),
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const result = await svc.generateReply("I want to learn IT support", "pack-link-test-session");
+    assert.ok(result.payload.starterPackUrl, "expected a starterPackUrl to be present");
+    assert.ok(
+        !result.payload.reply.includes(result.payload.starterPackUrl),
+        "reply text must not repeat the URL already shown in the starter-pack card"
+    );
+    assert.ok(!result.payload.reply.includes("at to"), "reply must not contain a dangling preposition");
+    assert.ok(result.payload.reply.includes("Access your starter pack to get started."));
+});
