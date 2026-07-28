@@ -1,0 +1,33 @@
+name: Deploy Backend to Azure
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: db1a25ed-5a85-417e-843c-5520fbea419a
+          tenant-id: 84c31ca0-ac3b-4eae-ad11-519d80233e6f
+          subscription-id: e0edb877-5159-40cf-93f4-7ae3aacbfcc6
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: onboardx-gemma-be-8412
+          package: backend
