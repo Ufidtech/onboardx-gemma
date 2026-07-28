@@ -29,6 +29,7 @@ function buildStarterPackUrl(track, level) {
  */
 function stripMarkdownEmphasis(text) {
   return text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // [label](url)
     .replace(/\*\*\*(.+?)\*\*\*/g, "$1") // ***bold italic***
     .replace(/\*\*(.+?)\*\*/g, "$1") // **bold**
     .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "$1") // *italic*
@@ -62,7 +63,10 @@ function cleanReplyText(text, links = []) {
 
   // Removing a URL from phrases such as "at <url> to get started" can
   // leave a dangling preposition. Keep the resulting prose natural.
-  return cleaned.replace(/\b(?:at|via)\s+(?=to\b|[.,;:!?]|$)/gi, "").trim();
+  return cleaned
+    .replace(/\b(?:at|via)\s+(?=and\b|to\b|[.,;:!?]|$)/gi, "")
+    .replace(/ {2,}/g, " ")
+    .trim();
 }
 
 function contradictsGroundedMatch(text) {

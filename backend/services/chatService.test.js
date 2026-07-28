@@ -246,3 +246,24 @@ test("does not ask for a track when a grounded match is already attached", async
     assert.ok(!result.reply.toLowerCase().includes("tracks listed below"));
     assert.ok(result.reply.includes("Digital Marketing"));
 });
+
+test("removes markdown link syntax and dangling connectors from grounded prose", async () => {
+    const svc = createChatService({
+        aiClient: mockAiClientDirectResponse(
+            "Connect via https://wa.me/fake202 and use your [beginner starter pack](/api/resources/starter-pack?track=Backend&level=beginner)."
+        ),
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const result = await svc.generateReply(
+        "I want to learn backend",
+        "markdown-link-cleanup-session"
+    );
+
+    assert.ok(!result.payload.reply.includes("["));
+    assert.ok(!result.payload.reply.includes("]("));
+    assert.ok(!result.payload.reply.includes("via and"));
+    assert.ok(result.payload.reply.includes("beginner starter pack"));
+});
