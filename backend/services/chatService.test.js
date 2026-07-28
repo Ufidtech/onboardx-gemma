@@ -267,3 +267,21 @@ test("removes markdown link syntax and dangling connectors from grounded prose",
     assert.ok(!result.payload.reply.includes("via and"));
     assert.ok(result.payload.reply.includes("beginner starter pack"));
 });
+
+test("preserves sentence punctuation after removing a duplicate URL", async () => {
+    const svc = createChatService({
+        aiClient: mockAiClientDirectResponse(
+            "Open your pack here /api/resources/starter-pack?track=Backend&level=beginner. You can start today."
+        ),
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const result = await svc.generateReply(
+        "I want to learn backend",
+        "punctuation-cleanup-session"
+    );
+
+    assert.ok(result.payload.reply.includes("here. You"));
+});

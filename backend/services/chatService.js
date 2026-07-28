@@ -48,7 +48,7 @@ function stripDuplicateLink(text, link) {
 
   const escaped = link.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return text
-    .replace(new RegExp(`:?\\s*${escaped}[.,;:!?]?`, "g"), "")
+    .replace(new RegExp(`:?\\s*${escaped}`, "g"), "")
     .replace(/ {2,}/g, " ")
     .replace(/\s+([.,;:!?])/g, "$1") // no stray space before leftover punctuation
     .trim();
