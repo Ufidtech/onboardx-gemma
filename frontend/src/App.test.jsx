@@ -16,22 +16,36 @@ describe("App chat flow", () => {
         };
       }
 
+      const payload = {
+        reply: "You’re matched with Alex for Backend.",
+        status: "success",
+        source: "gemini",
+        reason: "tool_call_success_response_stream",
+        mentor: "Alex",
+        mentorLink: "https://wa.me/fake789",
+        track: "Backend",
+        week1Actions: [
+          "Set up your environment and verify the starter app runs.",
+          "Complete the first guided exercise with mentor feedback.",
+          "Share one progress update and one blocker before the next session.",
+        ],
+      };
+      const encoded = new TextEncoder().encode(
+        `data: ${JSON.stringify({ type: "done", payload })}\n\n`,
+      );
+      let delivered = false;
+
       return {
         ok: true,
-        json: async () => ({
-          reply: "You’re matched with Alex for Backend.",
-          status: "success",
-          source: "gemini",
-          reason: "tool_call_success_response",
-          mentor: "Alex",
-          mentorLink: "https://wa.me/fake789",
-          track: "Backend",
-          week1Actions: [
-            "Set up your environment and verify the starter app runs.",
-            "Complete the first guided exercise with mentor feedback.",
-            "Share one progress update and one blocker before the next session.",
-          ],
-        }),
+        body: {
+          getReader: () => ({
+            read: async () => {
+              if (delivered) return { done: true, value: undefined };
+              delivered = true;
+              return { done: false, value: encoded };
+            },
+          }),
+        },
       };
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -39,7 +53,7 @@ describe("App chat flow", () => {
     render(<App />);
 
     const input = screen.getByPlaceholderText("Type a message...");
-    const submitButton = screen.getByRole("button");
+    const submitButton = screen.getByRole("button", { name: "➤" });
 
     fireEvent.change(input, { target: { value: "I want backend" } });
     fireEvent.click(submitButton);
@@ -59,7 +73,7 @@ describe("App chat flow", () => {
     );
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:4000/api/chat",
+      "http://localhost:4000/api/chat/stream",
       expect.objectContaining({
         method: "POST",
       })

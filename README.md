@@ -115,7 +115,8 @@ cd backend
 npm test
 ```
 
-**27 passing tests**, covering:
+**31 passing tests**, covering:
+- Gemma's native `check_mentor_capacity` function-call/result continuation loop
 - Mentor capacity matching and cross-track alternative logic
 - Track and level inference from natural language (including word-boundary safety, so short tokens like "ai" or "ux" don't false-match inside words like "wait" or "guide")
 - All 12 tracks generating real, distinct learning paths and starter packs

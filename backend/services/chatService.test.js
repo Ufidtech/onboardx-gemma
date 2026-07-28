@@ -10,6 +10,59 @@ function mockAiClientDirectResponse(text) {
     };
 }
 
+test("executes Gemma's native function call and returns the result to the interaction", async () => {
+    const requests = [];
+    const aiClient = {
+        interactions: {
+            create: async (request) => {
+                requests.push(request);
+                if (requests.length === 1) {
+                    return {
+                        id: "interaction-tool-1",
+                        status: "requires_action",
+                        steps: [{
+                            type: "function_call",
+                            id: "call-1",
+                            name: "check_mentor_capacity",
+                            arguments: {
+                                track: "Digital Marketing",
+                                level: "intermediate",
+                                reasoning: "The user wants to improve an existing campaign."
+                            }
+                        }]
+                    };
+                }
+
+                return { text: "A mentor is available to guide your digital marketing growth." };
+            }
+        }
+    };
+    const tool = { type: "function", name: "check_mentor_capacity", parameters: {} };
+    const svc = createChatService({
+        aiClient,
+        modelName: "gemma-test",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: tool
+    });
+
+    const result = await svc.generateReply(
+        "I already run campaigns and want to improve my marketing analytics",
+        "native-tool-session"
+    );
+
+    assert.equal(requests.length, 2);
+    assert.deepEqual(requests[0].tools, [tool]);
+    assert.equal(requests[1].previous_interaction_id, "interaction-tool-1");
+    assert.equal(requests[1].input[0].type, "function_result");
+    assert.equal(requests[1].input[0].call_id, "call-1");
+    assert.equal(requests[1].input[0].result.track, "Digital Marketing");
+    assert.equal(result.payload.track, "Digital Marketing");
+    assert.equal(result.payload.level, "intermediate");
+    assert.equal(result.payload.decision.decidedBy, "gemma_tool_call");
+    assert.equal(result.payload.decision.reasoning, "The user wants to improve an existing campaign.");
+    assert.equal(result.payload.reason, "tool_call_success_response");
+});
+
 test("a follow-up question with no track keyword still reuses the session's established match", async () => {
     const svc = createChatService({
         aiClient: mockAiClientDirectResponse("Here's what a frontend dev does..."),

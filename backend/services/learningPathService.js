@@ -12,7 +12,9 @@
  * but the actual path CONTENT is a fixed, reviewable lookup table rather than
  * something the model freely generates each time. That means the same
  * track+level always produces the same path (predictable, testable, no
- * hallucinated steps), while the conversation *around* it is still LLM-driven.
+ * hallucinated steps), while Gemma selects the track and level through a
+ * native function call and drives the conversation around the grounded result.
+ * Deterministic inference remains only as a safety fallback if the call fails.
  */
 
 const TRACKS = {

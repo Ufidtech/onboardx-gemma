@@ -211,51 +211,98 @@ function buildSystemInstruction() {
   ].join("\n");
 }
 
-function buildComposeInput(message, context) {
+function buildAgentInput(message, session) {
   const lines = [
-    "You are replying to a community member. Think about their message together with",
-    "the grounded facts below, then write ONE warm, concise, natural reply (2-4",
-    "sentences) that helps them act next. Use ONLY the facts provided - never invent",
-    "mentors, seats, links, tracks, or curriculum.",
+    "Reply to this community member in one warm, concise message (2-4 sentences).",
+    "If they identify a learning interest, request a mentor, or pivot to a new track,",
+    "you MUST call check_mentor_capacity first. Infer the best track and experience",
+    "level from their words and put that decision in the function arguments.",
+    "Do not claim a mentor, seat, link, alternative, or curriculum before calling the tool.",
     "",
     "User message:",
     message,
     ""
   ];
 
-  if (context && context.status === "success") {
+  if (session.track && session.match) {
+    const context = session.match;
     lines.push(
-      "Grounded match (real data you must use):",
+      "Existing grounded match from an earlier turn:",
       `- Track: ${context.track}`,
       `- Experience level: ${context.level}`,
-      `- Mentor to reach out to for guidance and advice: ${context.mentor}`,
-      `- First things to focus on: ${(context.week1Actions || []).join("; ")}`,
+      `- Status: ${context.status}`,
+      ...(context.mentor ? [`- Mentor for guidance: ${context.mentor}`] : []),
+      ...(context.alternative
+        ? [`- Available alternative: ${context.alternative.mentor} for ${context.alternative.track}`]
+        : []),
+      `- First learning actions: ${(context.week1Actions || []).join("; ")}`,
       "",
-      "Encourage them, name the mentor as someone to reach out to for guidance and",
-      "advice (not an instructor who teaches), and briefly point at what to start with."
-    );
-  } else if (context && context.status === "full") {
-    const alt = context.alternative;
-    lines.push(
-      "Grounded situation (real data you must use):",
-      `- The ${context.track} track is currently FULL (no mentor seats right now).`,
-      alt
-        ? `- A real alternative with open capacity: ${alt.mentor} for ${alt.track}.`
-        : "- No other mentor currently has open capacity.",
-      "- A self-guided starter pack for the requested track is shown below your reply.",
-      "",
-      "Be honest that the track is full. If an alternative mentor exists, offer them by",
-      "name as a genuine option, then mention the self-guided starter pack below."
+      "For a follow-up about this same match, answer from these facts without calling",
+      "the tool again. If the user asks for a different track, call the tool for the pivot."
     );
   } else {
     lines.push(
-      "No specific track is established yet.",
-      "Invite the user, in one short sentence, to tap one of the track buttons shown",
-      "below your message. Do NOT list or name any tracks in your text."
+      "There is no established match yet. If the message does not reveal a learning",
+      "interest (for example, it is only a greeting), briefly invite the user to tap a",
+      "track below without calling the tool and without listing the tracks in your reply."
     );
   }
 
   return lines.join("\n");
+}
+
+function extractFunctionCall(interaction) {
+  return [
+    ...(interaction?.outputs || []),
+    ...(interaction?.steps || [])
+  ].find((output) => output?.type === "function_call") || null;
+}
+
+function executeMentorTool(functionCall, message, session) {
+  if (functionCall.name !== "check_mentor_capacity") {
+    throw new Error(`Unsupported function call: ${functionCall.name}`);
+  }
+
+  const args = functionCall.arguments || {};
+  const context = resolveGroundedContext(
+    message,
+    session,
+    args.track,
+    args.level
+  );
+
+  if (!context) {
+    throw new Error("Gemma called check_mentor_capacity without a valid track.");
+  }
+
+  return {
+    context,
+    decision: {
+      track: context.track,
+      level: context.level,
+      reasoning: typeof args.reasoning === "string" ? args.reasoning : null,
+      decidedBy: "gemma_tool_call"
+    }
+  };
+}
+
+function buildFunctionResult(functionCall, context) {
+  return {
+    type: "function_result",
+    name: functionCall.name,
+    call_id: functionCall.id,
+    result: {
+      status: context.status,
+      track: context.track,
+      level: context.level,
+      mentor: context.mentor,
+      mentorLink: context.mentorLink,
+      alternative: context.alternative,
+      week1Actions: context.week1Actions,
+      estimatedWeeks: context.estimatedWeeks,
+      starterPackUrl: context.starterPackUrl
+    }
+  };
 }
 
 function buildFallbackReply(message, session, reason = "fallback_response") {
@@ -298,6 +345,7 @@ function createChatService({
   aiClient,
   modelName,
   strictGeminiApi,
+  checkMentorCapacityTool,
   tokenBudget = null,
   thinkingLevel = null,
   maxOutputTokens = null
@@ -330,20 +378,46 @@ function createChatService({
     }
 
     try {
-      // Resolve the grounded match deterministically up front (mentor, seats,
-      // curriculum) - no model call needed. Then hand those real facts to the
-      // thinking model in a SINGLE call and let it reason over them to compose
-      // a warm, personalized reply, instead of returning a canned template.
-      const context = resolveGroundedContext(message, session);
-
-      const interaction = await aiClient.interactions.create({
+      let interaction = await aiClient.interactions.create({
         model: modelName,
-        input: buildComposeInput(message, context),
+        input: buildAgentInput(message, session),
         system_instruction: buildSystemInstruction(),
+        tools: [checkMentorCapacityTool],
         ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
       });
 
       addUsage(requestUsage, interaction);
+
+      const functionCall = extractFunctionCall(interaction);
+      let context = null;
+      let decision = null;
+
+      if (functionCall) {
+        const executed = executeMentorTool(functionCall, message, session);
+        context = executed.context;
+        decision = executed.decision;
+
+        interaction = await aiClient.interactions.create({
+          model: modelName,
+          previous_interaction_id: interaction.id,
+          input: [buildFunctionResult(functionCall, context)],
+          ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
+        });
+        addUsage(requestUsage, interaction);
+      } else {
+        // Safety net: if the model skips a required tool call, keep all mentor
+        // data grounded and preserve established session context. This path is
+        // observable as inference_fallback rather than being attributed to Gemma.
+        context = resolveGroundedContext(message, session);
+        if (context) {
+          decision = {
+            track: context.track,
+            level: context.level,
+            reasoning: null,
+            decidedBy: "inference_fallback"
+          };
+        }
+      }
 
       if (!hasUsableInteractionText(interaction)) {
         logChatSource("FALLBACK", "empty_gemma_response");
@@ -364,14 +438,11 @@ function createChatService({
           statusCode: 200,
           payload: {
             ...buildReplyFromContext(context, replyText),
-            decision: {
-              track: context.track,
-              level: context.level,
-              reasoning: null,
-              decidedBy: "inference"
-            },
+            decision,
             source: "gemini",
-            reason: "grounded_compose"
+            reason: functionCall
+              ? "tool_call_success_response"
+              : "grounded_inference_fallback"
           }
         };
       }
@@ -459,24 +530,51 @@ function createChatService({
       );
     }
 
-    const context = resolveGroundedContext(message, session);
-
     try {
-      const stream = await aiClient.interactions.create({
+      let interaction = await aiClient.interactions.create({
         model: modelName,
-        input: buildComposeInput(message, context),
+        input: buildAgentInput(message, session),
         system_instruction: buildSystemInstruction(),
-        stream: true,
+        tools: [checkMentorCapacityTool],
         ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
       });
 
-      let rawText = "";
-      for await (const event of stream) {
-        if (
-          event?.event_type === "step.delta" &&
-          event.delta?.type === "text" &&
-          typeof event.delta.text === "string"
-        ) {
+      addUsage(requestUsage, interaction);
+
+      const functionCall = extractFunctionCall(interaction);
+      let context = null;
+      let decision = null;
+      let stream = null;
+
+      if (functionCall) {
+        const executed = executeMentorTool(functionCall, message, session);
+        context = executed.context;
+        decision = executed.decision;
+        stream = await aiClient.interactions.create({
+          model: modelName,
+          previous_interaction_id: interaction.id,
+          input: [buildFunctionResult(functionCall, context)],
+          stream: true,
+          ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
+        });
+      } else {
+        context = resolveGroundedContext(message, session);
+        if (context) {
+          decision = {
+            track: context.track,
+            level: context.level,
+            reasoning: null,
+            decidedBy: "inference_fallback"
+          };
+        }
+      }
+
+      let rawText = stream ? "" : extractInteractionText(interaction);
+      if (!stream && rawText) onDelta(rawText);
+
+      for await (const event of stream || []) {
+        if (event?.event_type === "step.delta" && event.delta?.type === "text" &&
+            typeof event.delta.text === "string") {
           rawText += event.delta.text;
           onDelta(event.delta.text);
         }
@@ -496,14 +594,11 @@ function createChatService({
         return finalizePayload(
           {
             ...buildReplyFromContext(context, replyText),
-            decision: {
-              track: context.track,
-              level: context.level,
-              reasoning: null,
-              decidedBy: "inference"
-            },
+            decision,
             source: "gemini",
-            reason: "grounded_compose_stream"
+            reason: functionCall
+              ? "tool_call_success_response_stream"
+              : "grounded_inference_fallback_stream"
           },
           requestUsage
         );
