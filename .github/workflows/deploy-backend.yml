@@ -1,5 +1,6 @@
 name: Deploy Backend to Azure
 
+# Deploys backend/ to Azure App Service (onboardx-gemma-be-8412) via OIDC.
 on:
   push:
     branches: [ main ]
