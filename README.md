@@ -1,9 +1,9 @@
 # 💬 OnboardX
 
-> **An AI-powered community continuity and member support platform built with Gemma 4**  
+> **An AI-powered community continuity and member support platform built for FUT Minna and similar African campus developer communities**  
 > Built for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**
 
-OnboardX helps African developer communities keep members learning, supported, and engaged between events.
+OnboardX helps FUT Minna’s developer community keep members learning, supported, and engaged between events.
 
 Instead of losing momentum after workshops, hackathons, or onboarding sessions, members can return to OnboardX to get matched with mentors, continue a learning path, ask follow-up questions, or explore how they can contribute back to the community.
 
@@ -13,7 +13,7 @@ It is designed for real communities where support is not just for beginners. Som
 
 ## Why it matters
 
-Many developer communities are active during events, but go quiet afterward.
+Many campus tech communities are active during events, but go quiet afterward.
 
 That creates a real gap:
 - new members do not know what to do next
