@@ -67,7 +67,9 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
   const isUser = message.role === "user";
   const hasMentorLink = Boolean(message.mentorLink);
   const hasStarterPack = Boolean(message.starterPackUrl);
-  const hasAlternative = Boolean(message.alternative && message.alternative.mentor);
+  const hasAlternative = Boolean(
+    message.alternative && message.alternative.mentor,
+  );
   const trackOptions = Array.isArray(message.trackOptions)
     ? message.trackOptions
     : [];
@@ -85,7 +87,7 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`max-w-[80%] p-3 rounded-lg shadow-sm text-sm break-words ${
+        className={`max-w-[88%] sm:max-w-[80%] px-3 py-2.5 sm:p-3 rounded-lg shadow-sm text-sm break-words leading-relaxed ${
           isUser
             ? "bg-[#d9fdd3] text-black rounded-tr-none"
             : "bg-white text-black rounded-tl-none"
@@ -108,7 +110,7 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
               href={message.mentorLink}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 inline-block font-medium text-blue-700 underline break-all"
+              className="mt-1 inline-block font-medium text-blue-700 underline break-words"
             >
               {message.mentor || message.track || message.mentorLink}
             </a>
@@ -123,7 +125,7 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
               href={message.alternative.link}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 inline-block font-medium text-blue-700 underline break-all"
+              className="mt-1 inline-block font-medium text-blue-700 underline break-words"
             >
               {message.alternative.mentor} — {message.alternative.track}
             </a>
@@ -141,7 +143,7 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
             <a
               href={message.starterPackUrl}
               download
-              className="mt-1 inline-flex items-center gap-1 font-medium text-blue-700 underline break-all"
+              className="mt-1 inline-flex items-center gap-1 font-medium text-blue-700 underline break-words"
             >
               Download {message.track ? `${message.track} ` : ""}starter pack
             </a>

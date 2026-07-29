@@ -14,7 +14,7 @@ export default function MessageList({ messages, isTyping, onSelectTrack }) {
   }, [messages, isTyping]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex-1 overflow-y-auto px-3 py-3 sm:p-4 space-y-3 sm:space-y-4">
       {messages.map((msg, index) => (
         <MessageBubble
           key={index}
@@ -26,7 +26,7 @@ export default function MessageList({ messages, isTyping, onSelectTrack }) {
 
       {isTyping && (
         <div className="flex justify-start">
-          <div className="bg-white text-black p-3 rounded-lg rounded-tl-none max-w-[80%] shadow-sm text-sm italic text-gray-500">
+          <div className="bg-white text-black px-3 py-2 rounded-lg rounded-tl-none max-w-[80%] shadow-sm text-sm italic text-gray-500">
             typing...
           </div>
         </div>
