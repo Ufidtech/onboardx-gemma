@@ -1,34 +1,35 @@
 # 💬 OnboardX
 
-> **A Gemma 4-powered community continuity and learning support agent**  
+> **An AI-powered community continuity and member support platform built with Gemma 4**  
 > Built for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**
 
-OnboardX helps community members stay supported between events by matching them with mentors, guiding them to the right learning track, and keeping the conversation going when a track is full.
+OnboardX helps African developer communities keep members learning, supported, and engaged between events.
 
-It is designed for real communities where support is not limited to beginners. Some people are just getting started, some are already intermediate, and some want to mentor, contribute, or support others. OnboardX gives all of them a lightweight conversational path forward.
+Instead of losing momentum after workshops, hackathons, or onboarding sessions, members can return to OnboardX to get matched with mentors, continue a learning path, ask follow-up questions, or explore how they can contribute back to the community.
+
+It is designed for real communities where support is not just for beginners. Some members are just starting out, some are intermediate, and some are experienced contributors who want to mentor, guide, or give back. OnboardX supports all of them in one lightweight conversational experience powered by Gemma 4.
 
 ---
 
 ## Why it matters
 
-In many communities, energy is high during hackathons, workshops, and onboarding events, but momentum drops afterward.
+Many developer communities are active during events, but go quiet afterward.
 
-People often:
+That creates a real gap:
+- new members do not know what to do next
+- intermediate members need direction
+- mentors are limited and cannot support everyone at once
+- experienced members want to help, but there is no simple path
+- people lose momentum when the community goes silent
 
-- do not know where to start
-- lose access to support after events end
-- need a mentor but cannot find one immediately
-- want to contribute, but do not know how
-- stop showing up when guidance disappears
-
-OnboardX bridges that gap by keeping support available through a simple chat experience powered by Gemma 4.
+OnboardX bridges that gap by providing ongoing support between events through mentor routing, learning guidance, and contributor-aware conversation.
 
 ---
 
 ## What it does
 
 - WhatsApp-style chat interface
-- Community continuity framing for learners and contributors
+- Community continuity framing for learners, contributors, and returning members
 - Tappable track buttons
 - Streaming responses for a responsive demo
 - Gemma 4 native function calling
@@ -45,20 +46,21 @@ OnboardX bridges that gap by keeping support available through a simple chat exp
 
 ## How Gemma 4 is used
 
-Gemma 4 helps:
+Gemma 4 is core to the app.
 
-- infer the user’s learning track
+It helps OnboardX:
+- infer the user’s learning track from natural language
 - infer beginner or intermediate level
-- recognize contributor intent when the user wants to help others
+- recognize when a user wants to mentor or contribute
 - decide when to call `check_mentor_capacity`
-- compose grounded responses based on live backend data
+- compose grounded responses using live backend data
+- maintain continuity across follow-up messages
 
-The backend ensures:
-
+The backend ensures that:
 - mentors are not invented
-- seats are updated correctly
-- follow-up messages reuse session context
-- intent is stored in the session and returned to the UI
+- seats are checked live
+- session context is reused
+- track pivots are handled safely
 - model output is cleaned for the plain-text UI
 
 ---
@@ -101,7 +103,6 @@ Digital Marketing
 ## Run locally
 
 ### Backend
-
 ```bash
 cd backend
 npm install
@@ -110,7 +111,6 @@ npm start
 ```
 
 ### Frontend
-
 ```bash
 cd frontend
 npm install
@@ -132,7 +132,6 @@ npm run dev
 ## Testing ideas
 
 Try these in the app:
-
 - ask for a track as a beginner
 - ask how to contribute to the community
 - ask for the same track again in a follow-up
