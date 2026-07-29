@@ -178,8 +178,8 @@ export default function App() {
         : "Tell me what you want to learn or how you want to contribute.";
 
   return (
-    <div className="min-h-screen bg-gray-200 flex justify-center items-center">
-      <div className="w-full max-w-md h-[100dvh] sm:h-[90vh] bg-[#efeae2] sm:rounded-lg shadow-xl flex flex-col overflow-hidden relative">
+    <div className="min-h-screen bg-gray-200 flex justify-center items-stretch sm:items-center p-0 sm:p-4">
+      <div className="w-full max-w-md min-h-[100dvh] sm:h-[90vh] bg-[#efeae2] sm:rounded-lg shadow-xl flex flex-col overflow-hidden relative">
         <ChatHeader lastSource={lastSource} />
         <MessageList
           messages={messages}

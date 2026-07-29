@@ -21,7 +21,7 @@ export default function ChatInput({ onSendMessage, disabled, helperText }) {
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Try: frontend, backend, AI, or just describe what you want"
+          placeholder="Try frontend, backend, or AI"
           disabled={disabled}
           className="flex-1 min-w-0 py-2.5 px-4 rounded-full border-none focus:outline-none focus:ring-1 focus:ring-[#008069] disabled:bg-gray-200 text-sm sm:text-base"
         />
@@ -34,7 +34,7 @@ export default function ChatInput({ onSendMessage, disabled, helperText }) {
         </button>
       </div>
       {helperText && (
-        <div className="text-xs text-gray-600 px-1 leading-snug">
+        <div className="text-xs text-gray-600 px-1 leading-snug max-w-full break-words">
           {helperText}
         </div>
       )}
