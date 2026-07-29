@@ -28,6 +28,7 @@ export default function App() {
   const [activeModel, setActiveModel] = useState("loading...");
   const [usage, setUsage] = useState(null);
   const [decision, setDecision] = useState(null);
+  const [sessionIntent, setSessionIntent] = useState("unknown");
 
   useEffect(() => {
     let ignore = false;
@@ -141,6 +142,10 @@ export default function App() {
             setLastReason(data.reason || "unknown");
             setUsage(data.usage || null);
             setDecision(data.decision || null);
+            setSessionIntent(
+              data.intent || (data.decision?.track ? "learner" : "unknown"),
+            );
+
             setMessages((prev) =>
               streamStarted
                 ? replaceLastAgent(prev, buildAgentMessage(data))
@@ -165,6 +170,13 @@ export default function App() {
     handleSendMessage(`I want to learn ${track}`);
   };
 
+  const helperText =
+    sessionIntent === "contributor"
+      ? "Contributor mode: tell me how you want to help the community."
+      : sessionIntent === "learner"
+        ? "Learning mode: share what you want to learn and I’ll help match you."
+        : "Tell me what you want to learn or how you want to contribute.";
+
   return (
     <div className="min-h-screen bg-gray-200 flex justify-center items-center">
       <div className="w-full max-w-md h-[100dvh] sm:h-[90vh] bg-[#efeae2] sm:rounded-lg shadow-xl flex flex-col overflow-hidden relative">
@@ -183,7 +195,11 @@ export default function App() {
             decision={decision}
           />
         )}
-        <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
+        <ChatInput
+          onSendMessage={handleSendMessage}
+          disabled={isTyping}
+          helperText={helperText}
+        />
       </div>
     </div>
   );

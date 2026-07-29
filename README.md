@@ -1,32 +1,34 @@
 # 💬 OnboardX
 
-> **A capacity-aware mentorship agent powered by Gemma 4**  
+> **A Gemma 4-powered community continuity and learning support agent**  
 > Built for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**
 
-OnboardX helps new community members find the right learning track, get matched with an available mentor, and continue learning even when a track is full.
+OnboardX helps community members stay supported between events by matching them with mentors, guiding them to the right learning track, and keeping the conversation going when a track is full.
 
-It turns onboarding into a guided chat experience powered by Gemma 4 native function calling and grounded backend logic.
+It is designed for real communities where support is not limited to beginners. Some people are just getting started, some are already intermediate, and some want to mentor, contribute, or support others. OnboardX gives all of them a lightweight conversational path forward.
 
 ---
 
 ## Why it matters
 
-Growing communities often face:
-- mentor overload
-- repeated “where do I start?” questions
-- weak onboarding
-- learner drop-off
+In many communities, energy is high during hackathons, workshops, and onboarding events, but momentum drops afterward.
 
-OnboardX reduces friction by routing users to:
-- a live mentor,
-- an available alternative track, or
-- a downloadable starter pack.
+People often:
+
+- do not know where to start
+- lose access to support after events end
+- need a mentor but cannot find one immediately
+- want to contribute, but do not know how
+- stop showing up when guidance disappears
+
+OnboardX bridges that gap by keeping support available through a simple chat experience powered by Gemma 4.
 
 ---
 
 ## What it does
 
 - WhatsApp-style chat interface
+- Community continuity framing for learners and contributors
 - Tappable track buttons
 - Streaming responses for a responsive demo
 - Gemma 4 native function calling
@@ -34,6 +36,7 @@ OnboardX reduces friction by routing users to:
 - Alternative mentor suggestions when a track is full
 - Downloadable starter packs
 - Session-aware conversation memory
+- Learner/contributor intent support
 - Token usage and budget tracking
 - Development-only debug panel
 - Safe fallback when the AI API is unavailable
@@ -43,15 +46,19 @@ OnboardX reduces friction by routing users to:
 ## How Gemma 4 is used
 
 Gemma 4 helps:
+
 - infer the user’s learning track
 - infer beginner or intermediate level
+- recognize contributor intent when the user wants to help others
 - decide when to call `check_mentor_capacity`
 - compose grounded responses based on live backend data
 
 The backend ensures:
+
 - mentors are not invented
 - seats are updated correctly
 - follow-up messages reuse session context
+- intent is stored in the session and returned to the UI
 - model output is cleaned for the plain-text UI
 
 ---
@@ -94,6 +101,7 @@ Digital Marketing
 ## Run locally
 
 ### Backend
+
 ```bash
 cd backend
 npm install
@@ -102,6 +110,7 @@ npm start
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 npm install
@@ -123,7 +132,9 @@ npm run dev
 ## Testing ideas
 
 Try these in the app:
+
 - ask for a track as a beginner
+- ask how to contribute to the community
 - ask for the same track again in a follow-up
 - change to a different track mid-conversation
 - select a track using the buttons
@@ -134,4 +145,4 @@ Try these in the app:
 
 ## Credits
 
-Built by the Gemma Duo Team: Two minds. One agent. Built for impact. for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.
+Built by the Gemma Duo Team for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.

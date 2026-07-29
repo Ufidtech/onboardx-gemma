@@ -62,32 +62,36 @@ function checkMentorCapacity(track) {
     message: "No seats available. Initiate self-guided track.",
     alternative: alternative
       ? {
-          track: alternative.track,
-          mentor: alternative.name,
-          link: alternative.contactLink,
-          seatsAvailable: alternative.seatsAvailable
-        }
+        track: alternative.track,
+        mentor: alternative.name,
+        link: alternative.contactLink,
+        seatsAvailable: alternative.seatsAvailable
+      }
       : null
   };
 }
 
 const TRACK_PATTERNS = [
-  { track: "Cloud Computing", patterns: [/cloud computing/, /google cloud/, /\bgcp\b/, /\bcloud\b/] },
-  { track: "AI / Machine Learning", patterns: [/machine learning/, /artificial intelligence/, /deep learning/, /\bml\b/, /\bai\b/] },
-  { track: "Android / Mobile Development", patterns: [/android/, /mobile development/, /mobile app/, /\bkotlin\b/] },
-  { track: "UI/UX Design", patterns: [/ux design/, /ui design/, /user experience/, /\bfigma\b/, /\bux\b/, /\bui\b/] },
-  { track: "Cybersecurity", patterns: [/cybersecurity/, /cyber security/] },
-  { track: "DevOps / SRE", patterns: [/devops/, /site reliability/, /\bsre\b/] },
-  { track: "IT Support", patterns: [/it support/, /tech support/, /help ?desk/] },
-  { track: "Digital Marketing", patterns: [/digital marketing/, /\bseo\b/, /social media marketing/] },
-  { track: "Data Analytics", patterns: [/data analytics/, /data analysis/, /data analyst/, /\bsql\b/] },
-  { track: "Frontend", patterns: [/frontend/, /front-end/, /front end/] },
-  { track: "Backend", patterns: [/backend/, /back-end/, /back end/] },
-  { track: "Project Management", patterns: [/project management/, /project/] }
+  { track: "Cloud Computing", patterns: [/cloud computing/, /google cloud/, /\bgcp\b/, /\bcloud\b/, /cloud engineering/, /cloud platform/] },
+  { track: "AI / Machine Learning", patterns: [/machine learning/, /artificial intelligence/, /deep learning/, /\bml\b/, /\bai\b/, /chatgpt/, /llm/, /genai/] },
+  { track: "Android / Mobile Development", patterns: [/android/, /mobile development/, /mobile app/, /mobile apps/, /\bkotlin\b/, /app development/] },
+  { track: "UI/UX Design", patterns: [/ux design/, /ui design/, /user experience/, /user interface/, /\bfigma\b/, /\bux\b/, /\bui\b/, /design stuff/, /product design/] },
+  { track: "Cybersecurity", patterns: [/cybersecurity/, /cyber security/, /security/, /ethical hacking/, /infosec/] },
+  { track: "DevOps / SRE", patterns: [/devops/, /site reliability/, /\bsre\b/, /ci\/cd/, /deployment/, /infrastructure/] },
+  { track: "IT Support", patterns: [/it support/, /tech support/, /help ?desk/, /troubleshooting/, /desktop support/] },
+  { track: "Digital Marketing", patterns: [/digital marketing/, /\bseo\b/, /social media marketing/, /marketing/, /content marketing/] },
+  { track: "Data Analytics", patterns: [/data analytics/, /data analysis/, /data analyst/, /\bsql\b/, /power bi/, /tableau/, /analytics/] },
+  { track: "Frontend", patterns: [/frontend/, /front-end/, /front end/, /web dev/, /web development/, /website development/, /react/, /html/, /css/, /javascript/] },
+  { track: "Backend", patterns: [/backend/, /back-end/, /back end/, /api/, /server side/, /server-side/, /node\.js/, /express/, /database/] },
+  { track: "Project Management", patterns: [/project management/, /project/, /pm/, /scrum/, /agile/] }
 ];
 
 function inferTrackFromMessage(message) {
-  const normalizedMessage = String(message || "").toLowerCase();
+  const normalizedMessage = String(message || "")
+    .toLowerCase()
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   // When a message mentions more than one track (people genuinely ramble -
   // "my cousin does cloud computing but honestly frontend maybe"), prefer
@@ -100,7 +104,7 @@ function inferTrackFromMessage(message) {
   for (const { track, patterns } of TRACK_PATTERNS) {
     for (const pattern of patterns) {
       const match = normalizedMessage.match(pattern);
-      if (match && match.index > bestIndex) {
+      if (match && typeof match.index === "number" && match.index > bestIndex) {
         bestIndex = match.index;
         bestTrack = track;
       }
@@ -117,7 +121,11 @@ function inferTrackFromMessage(message) {
  * own default.
  */
 function inferLevelFromMessage(message) {
-  const normalizedMessage = String(message || "").toLowerCase();
+  const normalizedMessage = String(message || "")
+    .toLowerCase()
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   const intermediateSignals = [
     "intermediate",
@@ -126,7 +134,10 @@ function inferLevelFromMessage(message) {
     "not new to",
     "worked with",
     "used it before",
-    "comfortable with"
+    "comfortable with",
+    "not a beginner",
+    "more advanced",
+    "next level"
   ];
 
   if (intermediateSignals.some((signal) => normalizedMessage.includes(signal))) {

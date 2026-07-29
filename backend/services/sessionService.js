@@ -27,6 +27,7 @@ function createEmptySession() {
     return {
         track: null,
         level: null,
+        intent: "unknown", // unknown | learner | contributor
         match: null, // { status, track, mentor, mentorLink, alternative, week1Actions, estimatedWeeks, starterPackUrl }
         lastActive: Date.now()
     };
