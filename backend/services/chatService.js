@@ -85,7 +85,6 @@ function getDirectReply(message, session) {
       reply:
         "Hi! I can help you choose a learning track, connect with a mentor, or show you how to contribute to the community.",
       status: "agent",
-      statusMessage: "Reply ready.",
       source: "direct",
       intent: "greeting",
       reason: "greeting_shortcut"
@@ -97,7 +96,6 @@ function getDirectReply(message, session) {
       return {
         reply: "You’re welcome! When you’re ready, tell me whether you’d like to mentor, share resources, or support new community members.",
         status: "agent",
-        statusMessage: "Contributor guidance ready.",
         source: "direct",
         intent: "contributor",
         reason: "thanks_with_contributor_context_shortcut"
@@ -122,7 +120,6 @@ function getDirectReply(message, session) {
     return {
       reply: "You’re welcome! If you want, I can help you find a track or mentor next.",
       status: "agent",
-      statusMessage: "Reply ready.",
       source: "direct",
       intent: "thanks",
       reason: "thanks_shortcut"
@@ -146,7 +143,6 @@ function getDirectReply(message, session) {
       return {
         reply: "How would you like to contribute — by mentoring, sharing resources, or supporting new community members?",
         status: "agent",
-        statusMessage: "Clarifying your contributor goal...",
         source: "direct",
         intent: "contributor",
         reason: "vague_message_with_contributor_context_shortcut"
