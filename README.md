@@ -125,6 +125,130 @@ Gemma 4 + mentor capacity tool
 └── fail    → deterministic fallback
 ```
 
+💬 OnboardX
+An AI-powered community continuity and member support platform for FUT Minna and similar African campus developer communities
+Built for the Build with Gemma: AI for Africa Hackathon — Minna 2026
+
+The problem
+Campus developer communities often do a strong job onboarding new members through workshops, hackathons, and bootcamps, but many participants become inactive within weeks. The issue is usually not lack of interest — it is the absence of personalized guidance, timely mentor support, and a clear next step after the event ends.
+
+This creates a continuity gap:
+
+new members do not know what to do after onboarding
+intermediate members need direction
+mentors are limited and cannot support everyone at once
+experienced members want to contribute, but there is no structured path
+communities lose momentum after the initial event
+The solution
+OnboardX is an AI-powered community continuity platform designed for FUT Minna and similar African campus developer communities. It helps members stay learning, supported, and engaged between events by matching them with mentors, guiding them to the right learning track, and recognizing when they want to contribute back to the community.
+
+Members can return to OnboardX to:
+
+get matched with mentors
+continue a learning path
+ask follow-up questions
+pivot to a new track
+explore how they can contribute back to the community
+It is built for real communities where support is not only for beginners. Some members are just starting out, some are intermediate, and some are experienced contributors who want to mentor, guide, or give back. OnboardX supports all of them in one lightweight conversational interface powered by Gemma 4.
+
+Why Gemma 4?
+Gemma 4 is not just generating text in this project — it is the reasoning layer behind the entire experience.
+
+It enables:
+
+intent understanding from natural language
+user-state inference such as beginner or intermediate level
+contributor detection when a user wants to mentor or help
+tool calling to query live mentor capacity
+grounded response generation based on backend data
+session-aware continuity across follow-up messages
+Without Gemma 4, OnboardX would be a static FAQ. With Gemma 4, it becomes an adaptive support system that can reason about what the user needs and route them accordingly.
+
+Core capabilities
+Community support
+mentor routing
+learning track guidance
+contributor-aware conversation
+session-aware continuity
+track pivots and follow-ups
+AI capabilities
+natural language track inference
+beginner/intermediate level inference
+Gemma 4 native function calling
+grounded mentor matching
+streamed responses
+Reliability
+live mentor capacity checks
+alternative mentor suggestions when a track is full
+downloadable starter packs
+deterministic fallback when AI is unavailable
+token usage and budget tracking
+User experience
+WhatsApp-style chat interface
+tappable track buttons
+helper text for learners and contributors
+development-only debug panel
+How Gemma 4 is used
+Gemma 4 serves as the reasoning engine that enables OnboardX to:
+
+infer the user’s learning track from natural language
+infer beginner or intermediate level
+recognize when a user wants to mentor or contribute
+decide when to call check_mentor_capacity
+compose grounded responses using live backend data
+maintain continuity across follow-up messages
+The backend ensures that:
+
+mentor recommendations are grounded in live backend data rather than model hallucinations
+mentor availability is verified in real time through tool invocation
+session context is reused across messages
+track pivots are handled safely
+model output is cleaned for the plain-text UI
+Example user journey
+
+Apply
+Student joins FUT Minna community
+↓
+Needs Frontend guidance
+↓
+Gemma identifies intent
+↓
+Backend checks mentor capacity
+↓
+Mentor available?
+├── Yes → Connect mentor
+└── No  → Recommend alternative mentor
+           + Starter Pack
+           + Personalized roadmap
+↓
+Conversation remembered
+↓
+Returns next week
+↓
+Continues learning without starting over
+Architecture
+
+Apply
+Frontend (React + Vite)
+│
+▼
+Express backend
+│
+▼
+Gemma 4 + mentor capacity tool
+│
+├── success → mentor match
+├── full    → alternative track / starter pack
+└── fail    → deterministic fallback
+Challenges
+Some of the main engineering challenges were:
+
+keeping mentor recommendations grounded in live backend data
+preserving conversation context across multiple turns
+handling full tracks gracefully
+making sure the app still works when AI output is unavailable
+These were addressed using native function calling, session-based context, and deterministic fallback logic.
+
 ## Screenshots
 
 ### Home Screen
@@ -138,6 +262,60 @@ Gemma 4 + mentor capacity tool
 
 ### Contributor Intent
 <img width="947" height="412" alt="Contributor Intent" src="https://github.com/user-attachments/assets/a683ec79-45ca-465c-9a24-59fc2d2b8b36" />
+
+Run locally
+Backend
+Run
+cd backend
+npm install
+cp .env.example .env
+npm start
+Frontend
+Run
+cd frontend
+npm install
+npm run dev
+API
+POST /api/chat — send a message
+POST /api/chat/stream — stream a response
+GET /api/resources/starter-pack — download a curriculum PDF
+GET /api/mentors/load — view mentor capacity
+GET /api/health — check service health
+Testing ideas
+Try these in the app:
+
+ask for a track as a beginner
+ask how to contribute to the community
+ask for the same track again in a follow-up
+change to a different track mid-conversation
+select a track using the buttons
+try a full track
+test with AI unavailable
+Scalability
+While OnboardX is demonstrated using FUT Minna, the same platform can be adapted for GDG on Campus chapters, MLSA communities, AWS Student Builder Group, university innovation hubs, and other African campus tech communities facing the same retention challenge.
+
+Impact
+OnboardX helps campus developer communities:
+
+reduce member drop-off after onboarding
+make limited mentor time more effective
+provide continuous support between events
+create clearer pathways from learner to contributor
+scale community support without requiring mentors to answer repetitive questions
+Track
+AI for Social Impact
+
+Future Work
+WhatsApp integration
+local language support
+offline Gemma deployment
+organizer analytics dashboard
+community health metrics
+Built With
+Gemma 4 · React · Vite · Express · Native Function Calling
+
+Credits
+Built by the Gemma Duo Team for the Build with Gemma: AI for Africa Hackathon — Minna 2026
 
 ## Supported tracks
 
