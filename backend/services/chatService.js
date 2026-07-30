@@ -93,6 +93,17 @@ function getDirectReply(message, session) {
   }
 
   if (isThanks(message)) {
+    if (session.intent === "contributor") {
+      return {
+        reply: "You’re welcome! When you’re ready, tell me whether you’d like to mentor, share resources, or support new community members.",
+        status: "agent",
+        statusMessage: "Contributor guidance ready.",
+        source: "direct",
+        intent: "contributor",
+        reason: "thanks_with_contributor_context_shortcut"
+      };
+    }
+
     if (session.match) {
       const context = { ...session.match, reused: true };
       const reply = context.mentor
@@ -131,6 +142,17 @@ function getDirectReply(message, session) {
   }
 
   if (isVagueMessage(message)) {
+    if (session.intent === "contributor") {
+      return {
+        reply: "How would you like to contribute — by mentoring, sharing resources, or supporting new community members?",
+        status: "agent",
+        statusMessage: "Clarifying your contributor goal...",
+        source: "direct",
+        intent: "contributor",
+        reason: "vague_message_with_contributor_context_shortcut"
+      };
+    }
+
     if (session.match) {
       const context = { ...session.match, reused: true };
       return {

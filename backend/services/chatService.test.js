@@ -478,6 +478,40 @@ test("a vague follow-up asks about the active match without checking capacity ag
     assert.match(followUp.payload.reply, /Data Analytics/);
 });
 
+test("contributor mode takes priority over an older match for vague follow-ups", async () => {
+    let requestCount = 0;
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async () => {
+                    requestCount += 1;
+                    return { text: "Your cybersecurity match is ready." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+    const sessionId = "contributor-over-old-match-session";
+
+    await svc.generateReply("I want to learn cybersecurity", sessionId);
+    await svc.generateReply("I want to mentor", sessionId);
+    const vague = await svc.generateReply("how", sessionId);
+    const thanks = await svc.generateReply("thanks", sessionId);
+
+    assert.equal(requestCount, 1);
+    assert.equal(vague.payload.intent, "contributor");
+    assert.equal(vague.payload.reason, "vague_message_with_contributor_context_shortcut");
+    assert.equal(vague.payload.track, undefined);
+    assert.equal(vague.payload.mentor, undefined);
+    assert.equal(vague.payload.trackOptions, undefined);
+    assert.match(vague.payload.reply, /How would you like to contribute/);
+    assert.equal(thanks.payload.intent, "contributor");
+    assert.equal(thanks.payload.reason, "thanks_with_contributor_context_shortcut");
+    assert.equal(thanks.payload.track, undefined);
+});
+
 test("a fallback reply preserves the active session match", async () => {
     let requestCount = 0;
     const svc = createChatService({
