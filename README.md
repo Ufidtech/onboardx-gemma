@@ -171,13 +171,16 @@ These were addressed using native function calling, session-based context, and d
 
 
 ### Learner Match
-![Learner Match](https://github.com/user-attachments/assets/01b003d2-3128-4da3-bf8f-dd4f597dfc4c)
+![Learner Match](https://github.com/user-attachments/assets/a5ccd774-6aea-4a2a-ad98-ffb6aa72bdd6)
+
 
 ### Full Track / Alternative Mentor
-![Full Track / Alternative Mentor](https://github.com/user-attachments/assets/fe105654-ee6d-43c4-b80f-d0ece35ec7cf)
+![Full Track / Alternative Mentor](https://github.com/user-attachments/assets/8f8845ee-fab8-490b-97f1-ce8576d458e9)
+
 
 ### Contributor Intent
-![Contributor Intent](https://github.com/user-attachments/assets/a683ec79-45ca-465c-9a24-59fc2d2b8b36)
+![Contributor Intent](https://github.com/user-attachments/assets/834ffd7f-e021-4260-8769-b6cf4a290716)
+
 
 ## Run Locally
 
