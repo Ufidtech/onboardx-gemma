@@ -167,7 +167,8 @@ These were addressed using native function calling, session-based context, and d
 ## Screenshots
 
 ### Home Screen
-![Home Screen](https://github.com/user-attachments/assets/d3eb2bd2-d392-4460-abe1-c5aef8eb0e2c)
+![Home Screen](https://github.com/user-attachments/assets/503b231f-041e-4d76-8290-de13ff14216d)
+
 
 ### Learner Match
 ![Learner Match](https://github.com/user-attachments/assets/01b003d2-3128-4da3-bf8f-dd4f597dfc4c)
