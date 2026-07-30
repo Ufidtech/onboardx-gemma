@@ -41,7 +41,7 @@ function isThanks(message) {
 
 function isContributorIntent(message) {
   const text = normalizeMessage(message);
-  return /\b(contribute|contribution|help (?:the community|others)|give back|volunteer|become a mentor|mentor (?:the community|others|people|members|beginners)|support the community|share my experience)\b/.test(text);
+  return /\b(contribute|contribution|help (?:the community|others)|give back|volunteer|become a mentor|be a mentor|(?:want|like|ready) to mentor|mentor (?:the community|others|people|members|beginners)|support the community|share my experience)\b/.test(text);
 }
 
 function isVagueMessage(message) {

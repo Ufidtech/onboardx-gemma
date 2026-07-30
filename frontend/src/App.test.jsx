@@ -98,6 +98,8 @@ describe("App chat flow", () => {
     expect(inferLocalIntent("I want to mentor others and share my experience")).toBe(
       "contributor",
     );
+    expect(inferLocalIntent("I want to mentor")).toBe("contributor");
+    expect(inferLocalIntent("I'd like to be a mentor")).toBe("contributor");
     expect(inferLocalIntent("okay")).toBe("clarification");
     expect(inferLocalIntent("not sure")).toBe("clarification");
     expect(inferLocalIntent("What is frontend development?")).toBe("unknown");

@@ -344,6 +344,30 @@ test("punctuated greetings and thanks still use direct replies", async () => {
     assert.equal(thanks.payload.intent, "thanks");
 });
 
+test("first-person offers to mentor use contributor guidance without track options", async () => {
+    let requestCount = 0;
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async () => {
+                    requestCount += 1;
+                    return { text: "This should not be called." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const result = await svc.generateReply("I want to mentor", "mentor-offer-session");
+
+    assert.equal(requestCount, 0);
+    assert.equal(result.payload.intent, "contributor");
+    assert.equal(result.payload.reason, "contributor_shortcut");
+    assert.equal(result.payload.trackOptions, undefined);
+});
+
 test("an informational track question does not expose or run the mentor tool", async () => {
     const requests = [];
     const svc = createChatService({
