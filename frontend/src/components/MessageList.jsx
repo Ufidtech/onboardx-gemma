@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
 
-export default function MessageList({ messages, isTyping, onSelectTrack }) {
+export default function MessageList({
+  messages,
+  isTyping,
+  onSelectTrack,
+  statusText,
+}) {
   const endOfMessagesRef = useRef(null);
 
   // Auto-scroll to the latest message
@@ -27,7 +32,7 @@ export default function MessageList({ messages, isTyping, onSelectTrack }) {
       {isTyping && (
         <div className="flex justify-start">
           <div className="bg-white text-black px-3 py-2 rounded-lg rounded-tl-none max-w-[80%] shadow-sm text-sm italic text-gray-500">
-            typing...
+            {statusText || "typing..."}
           </div>
         </div>
       )}

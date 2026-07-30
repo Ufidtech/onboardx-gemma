@@ -23,6 +23,10 @@ export default function App() {
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [statusText, setStatusText] = useState(
+    "Checking mentor availability...",
+  );
+
   const [lastSource, setLastSource] = useState("gemini");
   const [lastReason, setLastReason] = useState("boot");
   const [activeModel, setActiveModel] = useState("loading...");
@@ -63,6 +67,11 @@ export default function App() {
   const handleSendMessage = async (content) => {
     setMessages((prev) => [...prev, { role: "user", content }]);
     setIsTyping(true);
+    setStatusText(
+      sessionIntent === "contributor"
+        ? "Preparing contributor guidance..."
+        : "Checking mentor availability...",
+    );
 
     const buildAgentMessage = (data) => ({
       role: "agent",
@@ -124,6 +133,12 @@ export default function App() {
             if (!streamStarted) {
               streamStarted = true;
               setIsTyping(false);
+              setStatusText(
+                sessionIntent === "contributor"
+                  ? "Preparing contributor guidance..."
+                  : "Preparing your response...",
+              );
+
               setMessages((prev) => [
                 ...prev,
                 { role: "agent", content: event.text },
@@ -155,14 +170,17 @@ export default function App() {
         }
       }
     } catch {
+      setStatusText("Building a safe fallback response...");
       setLastSource("fallback");
       setLastReason("request_failed");
+
       setMessages((prev) => [
         ...prev,
         { role: "agent", content: "Connection error. Please try again." },
       ]);
     } finally {
       setIsTyping(false);
+      setStatusText("");
     }
   };
 
@@ -184,6 +202,7 @@ export default function App() {
         <MessageList
           messages={messages}
           isTyping={isTyping}
+          statusText={statusText}
           onSelectTrack={handleSelectTrack}
         />
         {import.meta.env.DEV && (
