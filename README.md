@@ -180,6 +180,28 @@ Try these in the app:
 
 While OnboardX is demonstrated using FUT Minna, the same platform can be adapted for GDG on Campus chapters, MLSA communities, AWS Student Buider Group, university innovation hubs, and other African campus tech communities facing the same retention challenge.
 
-## Credits
+## Impact
 
-Built by the Gemma Duo Team for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.
+OnboardX helps campus developer communities:
+- reduce member drop-off after onboarding
+- make limited mentor time more effective
+- provide continuous support between events
+- create clearer pathways from learner to contributor
+- scale community support without requiring mentors to answer repetitive questions
+```
+
+## Future Work
+```markdown
+## Future Work
+
+- WhatsApp integration
+- local language support
+- offline Gemma deployment
+- organizer analytics dashboard
+- community health metrics
+```
+
+## Built With
+You can add this near the top or under the title:
+```markdown
+Built with: Gemma 4 · React · Vite · Express · Native Function Calling
