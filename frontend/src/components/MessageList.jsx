@@ -5,7 +5,6 @@ export default function MessageList({
   messages,
   isTyping,
   onSelectTrack,
-  statusText,
 }) {
   const endOfMessagesRef = useRef(null);
 
@@ -32,7 +31,7 @@ export default function MessageList({
       {isTyping && (
         <div className="flex justify-start">
           <div className="bg-white text-black px-3 py-2 rounded-lg rounded-tl-none max-w-[80%] shadow-sm text-sm italic text-gray-500">
-            {statusText || "typing..."}
+            Thinking...
           </div>
         </div>
       )}

@@ -22,7 +22,6 @@ describe("App chat flow", () => {
         status: "success",
         source: "gemini",
         reason: "tool_call_success_response_stream",
-        statusMessage: "Mentor matched. Preparing your starter pack...",
         mentor: "Alex",
         mentorLink: "https://wa.me/fake789",
         track: "Backend",
@@ -70,10 +69,6 @@ describe("App chat flow", () => {
 
     expect(
       screen.getByText("Set up your environment and verify the starter app runs.")
-    ).toBeTruthy();
-
-    expect(
-      screen.getByText("Mentor matched. Preparing your starter pack...")
     ).toBeTruthy();
 
     expect(screen.getByText("Self-guided starter pack (5 weeks)")).toBeTruthy();

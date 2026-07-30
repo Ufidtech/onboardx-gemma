@@ -82,7 +82,6 @@ test("a follow-up question with no track keyword still reuses the session's esta
     const second = await svc.generateReply("what does a frontend dev do", sessionId);
     assert.equal(second.payload.track, "Frontend");
     assert.equal(second.payload.starterPackUrl, first.payload.starterPackUrl);
-    assert.equal(second.payload.statusMessage, "Using your current Frontend match.");
     if (first.payload.mentorLink) {
         assert.equal(second.payload.mentorLink, first.payload.mentorLink);
     }
@@ -317,7 +316,6 @@ test("greetings and contributor requests bypass Gemma and mentor matching", asyn
     assert.equal(contributor.payload.track, undefined);
     assert.equal(greeting.payload.trackOptions, undefined);
     assert.equal(contributor.payload.trackOptions, undefined);
-    assert.equal(contributor.payload.statusMessage, "Contributor guidance ready.");
 });
 
 test("punctuated greetings and thanks still use direct replies", async () => {
@@ -393,7 +391,6 @@ test("an informational track question does not expose or run the mentor tool", a
     assert.equal(requests[0].tools, undefined);
     assert.equal(result.payload.track, undefined);
     assert.equal(result.payload.reason, "compose_no_context");
-    assert.equal(result.payload.statusMessage, "Response ready.");
 });
 
 test("a clear track request still enables matching and grounds a result", async () => {
@@ -449,7 +446,6 @@ test("thanks after a match reuses session context without another model call", a
     assert.equal(thanks.payload.starterPackUrl, match.payload.starterPackUrl);
     assert.equal(thanks.payload.reason, "thanks_with_match_shortcut");
     assert.match(thanks.payload.reply, /Cloud Computing/);
-    assert.equal(thanks.payload.statusMessage, "Current match ready.");
 });
 
 test("a vague follow-up asks about the active match without checking capacity again", async () => {
@@ -539,10 +535,4 @@ test("a fallback reply preserves the active session match", async () => {
     assert.equal(fallback.payload.reason, "gemma_request_failed");
     assert.equal(fallback.payload.track, match.payload.track);
     assert.equal(fallback.payload.starterPackUrl, match.payload.starterPackUrl);
-    assert.equal(
-        fallback.payload.statusMessage,
-        match.payload.status === "success"
-            ? "Using your current Backend match."
-            : "Using your current Backend learning plan."
-    );
 });

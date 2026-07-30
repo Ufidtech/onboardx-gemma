@@ -110,7 +110,6 @@ function getDirectReply(message, session) {
 
       return {
         ...buildReplyFromContext(context, reply),
-        statusMessage: "Current match ready.",
         source: "direct",
         intent: "thanks",
         reason: "thanks_with_match_shortcut"
@@ -156,7 +155,6 @@ function getDirectReply(message, session) {
           context,
           `Are you asking about your ${context.track} match, your mentor guidance, or your next learning action?`
         ),
-        statusMessage: "Asking about your current match...",
         source: "direct",
         intent: session.intent || "learner",
         reason: "vague_message_with_match_shortcut"
@@ -167,7 +165,6 @@ function getDirectReply(message, session) {
       reply:
         "Sure — are you looking for a learning track, a mentor, or a way to contribute to the community?",
       status: "agent",
-      statusMessage: "Asking for a bit more detail...",
       source: "direct",
       intent: "clarification",
       reason: "vague_message_shortcut"
@@ -182,7 +179,6 @@ function getDirectReply(message, session) {
     return {
       reply: "Which learning track would you like mentor guidance or availability for?",
       status: "agent",
-      statusMessage: "Asking which track you mean...",
       source: "direct",
       intent: "clarification",
       reason: "mentor_request_missing_track"
@@ -302,9 +298,6 @@ function buildReplyFromContext(context, textOverride) {
         groundedText ||
         `You’re matched with ${context.mentor} for ${context.track}. Use the mentor link for guidance and start with the learning actions below.`,
       status: "success",
-      statusMessage: context.reused
-        ? `Using your current ${context.track} match.`
-        : "Mentor matched. Preparing your starter pack...",
       track: context.track,
       level: context.level,
       intent: context.intent || "unknown",
@@ -325,9 +318,6 @@ function buildReplyFromContext(context, textOverride) {
       groundedText ||
       `That track is currently full.${altText} Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.`,
     status: "full",
-    statusMessage: context.reused
-      ? `Using your current ${context.track} learning plan.`
-      : "Track is full. Finding an alternative mentor and preparing your starter pack...",
     track: context.track,
     level: context.level,
     intent: context.intent || "unknown",
@@ -528,8 +518,7 @@ function buildFallbackReply(message, session, reason = "fallback_response") {
       reply:
         "I can help you find a mentor and a learning path. Tap one of the tracks below to get started, or tell me what you're interested in.",
       source: "fallback",
-      reason,
-      statusMessage: "Building a safe fallback response..."
+      reason
     };
   }
   return {
@@ -594,7 +583,6 @@ function createChatService({
           reply: "GEMINI_API_KEY is not configured on the backend.",
           source: "fallback",
           reason: "missing_api_key",
-          statusMessage: "Chat service is not configured.",
           intent: session.intent || "unknown"
         }
       };
@@ -680,7 +668,6 @@ function createChatService({
         payload: {
           reply: replyText,
           status: "agent",
-          statusMessage: "Response ready.",
           intent: session.intent || "unknown",
           week1Actions: [],
           source: "gemini",
@@ -701,7 +688,6 @@ function createChatService({
             code: error?.code || "gemini_error",
             statusCode: error?.statusCode || error?.status || 500,
             source: "gemini_error",
-            statusMessage: "Unable to prepare a response.",
             intent: session.intent || "unknown",
             reason: "strict_mode_error_returned"
           }
@@ -760,8 +746,7 @@ function createChatService({
         {
           reply: "GEMINI_API_KEY is not configured on the backend.",
           source: "fallback",
-          reason: "missing_api_key",
-          statusMessage: "Chat service is not configured."
+          reason: "missing_api_key"
         },
         requestUsage
       );
@@ -860,7 +845,6 @@ function createChatService({
         {
           reply: replyText,
           status: "agent",
-          statusMessage: "Response ready.",
           intent: session.intent || "unknown",
           week1Actions: [],
           source: "gemini",

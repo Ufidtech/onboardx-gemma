@@ -3,7 +3,6 @@ import ChatHeader from "./components/ChatHeader";
 import MessageList from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
 import DebugPanel from "./components/DebugPanel";
-import { inferLocalIntent } from "./intent";
 
 export default function App() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
@@ -26,7 +25,6 @@ export default function App() {
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
-  const [statusText, setStatusText] = useState("Ready.");
   const [lastSource, setLastSource] = useState("gemini");
   const [lastReason, setLastReason] = useState("boot");
   const [activeModel, setActiveModel] = useState("loading...");
@@ -59,30 +57,13 @@ export default function App() {
   }, [apiBaseUrl]);
 
   const handleSendMessage = async (content) => {
-    const localIntent = inferLocalIntent(content);
-
     setMessages((prev) => [...prev, { role: "user", content }]);
     setIsTyping(true);
-
-    if (localIntent === "contributor") {
-      setStatusText("Preparing contributor guidance...");
-    } else if (localIntent === "learner") {
-      setStatusText("Checking mentor availability...");
-    } else if (localIntent === "greeting") {
-      setStatusText("Preparing a quick reply...");
-    } else if (localIntent === "thanks") {
-      setStatusText("Checking your conversation context...");
-    } else if (localIntent === "clarification") {
-      setStatusText("Preparing a short clarification...");
-    } else {
-      setStatusText("Thinking...");
-    }
 
     const buildAgentMessage = (data) => ({
       role: "agent",
       content: data.reply,
       status: data.status,
-      statusMessage: data.statusMessage,
       source: data.source,
       mentor: data.mentor,
       mentorLink: data.mentorLink,
@@ -140,15 +121,6 @@ export default function App() {
             if (!streamStarted) {
               streamStarted = true;
               setIsTyping(false);
-              setStatusText(
-                localIntent === "contributor"
-                  ? "Compiling contributor guidance..."
-                  : localIntent === "learner"
-                    ? "Preparing your response..."
-                    : localIntent === "clarification"
-                      ? "Preparing a clarification..."
-                      : "Preparing your response...",
-              );
               setMessages((prev) => [
                 ...prev,
                 { role: "agent", content: event.text },
@@ -182,14 +154,10 @@ export default function App() {
                 : [...prev, buildAgentMessage(data)],
             );
 
-            if (data.statusMessage) {
-              setStatusText(data.statusMessage);
-            }
           }
         }
       }
     } catch {
-      setStatusText("Building a safe fallback response...");
       setLastSource("fallback");
       setLastReason("request_failed");
       setMessages((prev) => [
@@ -198,7 +166,6 @@ export default function App() {
       ]);
     } finally {
       setIsTyping(false);
-      setStatusText("");
     }
   };
 
@@ -220,7 +187,6 @@ export default function App() {
         <MessageList
           messages={messages}
           isTyping={isTyping}
-          statusText={statusText}
           onSelectTrack={handleSelectTrack}
         />
         {import.meta.env.DEV && (
