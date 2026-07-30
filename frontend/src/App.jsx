@@ -4,8 +4,44 @@ import MessageList from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
 import DebugPanel from "./components/DebugPanel";
 
+function inferLocalIntent(message) {
+  const text = String(message || "")
+    .toLowerCase()
+    .trim();
+
+  if (
+    /^(hi|hello|hey|thanks?|thank you|good (morning|afternoon|evening))$/.test(
+      text,
+    )
+  ) {
+    return "greeting";
+  }
+
+  if (
+    /\b(contribute|contribution|help the community|give back|volunteer|mentor the community|support the community)\b/.test(
+      text,
+    )
+  ) {
+    return "contributor";
+  }
+
+  if (
+    /\b(mentor|mentorship|track|learning path|roadmap|guidance|availability)\b/.test(
+      text,
+    ) ||
+    /\b(frontend|backend|cloud computing|cloud|data analytics|ai|machine learning|android|mobile|ui\/ux|cybersecurity|devops|sre|it support|digital marketing|project management)\b/.test(
+      text,
+    )
+  ) {
+    return "learner";
+  }
+
+  return "unknown";
+}
+
 export default function App() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+
   // A stable id for this browser tab's conversation, so the backend can
   // remember an established track/mentor across messages instead of
   // evaluating every message in total isolation. Generated once and kept
@@ -15,6 +51,7 @@ export default function App() {
       ? crypto.randomUUID()
       : `session-${Date.now()}-${Math.random().toString(36).slice(2)}`,
   );
+
   const [messages, setMessages] = useState([
     {
       role: "agent",
@@ -23,10 +60,7 @@ export default function App() {
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
-  const [statusText, setStatusText] = useState(
-    "Checking mentor availability...",
-  );
-
+  const [statusText, setStatusText] = useState("Ready.");
   const [lastSource, setLastSource] = useState("gemini");
   const [lastReason, setLastReason] = useState("boot");
   const [activeModel, setActiveModel] = useState("loading...");
@@ -36,17 +70,13 @@ export default function App() {
 
   useEffect(() => {
     let ignore = false;
-
     async function loadHealth() {
       try {
         const response = await fetch(`${apiBaseUrl}/api/health`);
-
         if (!response.ok) {
           throw new Error(`Health check failed with status ${response.status}`);
         }
-
         const data = await response.json();
-
         if (!ignore) {
           setActiveModel(data.model || "unknown");
         }
@@ -56,22 +86,27 @@ export default function App() {
         }
       }
     }
-
     loadHealth();
-
     return () => {
       ignore = true;
     };
   }, [apiBaseUrl]);
 
   const handleSendMessage = async (content) => {
+    const localIntent = inferLocalIntent(content);
+
     setMessages((prev) => [...prev, { role: "user", content }]);
     setIsTyping(true);
-    setStatusText(
-      sessionIntent === "contributor"
-        ? "Preparing contributor guidance..."
-        : "Checking mentor availability...",
-    );
+
+    if (localIntent === "contributor") {
+      setStatusText("Preparing contributor guidance...");
+    } else if (localIntent === "learner") {
+      setStatusText("Checking mentor availability...");
+    } else if (localIntent === "greeting") {
+      setStatusText("Preparing a quick reply...");
+    } else {
+      setStatusText("Thinking...");
+    }
 
     const buildAgentMessage = (data) => ({
       role: "agent",
@@ -134,11 +169,12 @@ export default function App() {
               streamStarted = true;
               setIsTyping(false);
               setStatusText(
-                sessionIntent === "contributor"
-                  ? "Preparing contributor guidance..."
-                  : "Preparing your response...",
+                localIntent === "contributor"
+                  ? "Compiling contributor guidance..."
+                  : localIntent === "learner"
+                    ? "Preparing your response..."
+                    : "Preparing your response...",
               );
-
               setMessages((prev) => [
                 ...prev,
                 { role: "agent", content: event.text },
@@ -166,6 +202,10 @@ export default function App() {
                 ? replaceLastAgent(prev, buildAgentMessage(data))
                 : [...prev, buildAgentMessage(data)],
             );
+
+            if (data.statusMessage) {
+              setStatusText(data.statusMessage);
+            }
           }
         }
       }
@@ -173,7 +213,6 @@ export default function App() {
       setStatusText("Building a safe fallback response...");
       setLastSource("fallback");
       setLastReason("request_failed");
-
       setMessages((prev) => [
         ...prev,
         { role: "agent", content: "Connection error. Please try again." },
