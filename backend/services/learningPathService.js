@@ -214,6 +214,7 @@ const TRACKS = {
 
 const DEFAULT_TRACK = "Frontend";
 const DEFAULT_LEVEL = "beginner";
+const STARTER_PACK_WEEKS = 4;
 
 /**
  * @param {{track?: string, level?: string}} params
@@ -229,7 +230,9 @@ function generateLearningPath({ track, level } = {}) {
     track: normalizedTrack,
     level: normalizedLevel,
     steps,
-    estimatedWeeks: steps.length,
+    // The action list contains five milestones, but the downloadable
+    // starter pack itself is organized into four weekly modules.
+    estimatedWeeks: STARTER_PACK_WEEKS,
   };
 }
 

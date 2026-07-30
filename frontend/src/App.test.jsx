@@ -25,7 +25,7 @@ describe("App chat flow", () => {
         mentor: "Alex",
         mentorLink: "https://wa.me/fake789",
         track: "Backend",
-        estimatedWeeks: 5,
+        estimatedWeeks: 4,
         starterPackUrl: "/api/resources/starter-pack?track=Backend&level=beginner",
         week1Actions: [
           "Set up your environment and verify the starter app runs.",
@@ -71,7 +71,7 @@ describe("App chat flow", () => {
       screen.getByText("Set up your environment and verify the starter app runs.")
     ).toBeTruthy();
 
-    expect(screen.getByText("Self-guided starter pack (5 weeks)")).toBeTruthy();
+    expect(screen.getByText("Self-guided starter pack (4 weeks)")).toBeTruthy();
 
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:4000/api/health"

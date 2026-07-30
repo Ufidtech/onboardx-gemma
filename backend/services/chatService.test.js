@@ -418,6 +418,7 @@ test("a clear track request still enables matching and grounds a result", async 
     assert.deepEqual(requests[0].tools, [tool]);
     assert.equal(result.payload.track, "Backend");
     assert.equal(result.payload.intent, "learner");
+    assert.equal(result.payload.estimatedWeeks, 4);
     assert.equal(result.payload.decision.decidedBy, "inference_fallback");
 });
 
