@@ -83,7 +83,7 @@ const TRACK_PATTERNS = [
   { track: "Data Analytics", patterns: [/data analytics/, /data analysis/, /data analyst/, /\bsql\b/, /power bi/, /tableau/, /analytics/] },
   { track: "Frontend", patterns: [/frontend/, /front-end/, /front end/, /web dev/, /web development/, /website development/, /react/, /html/, /css/, /javascript/] },
   { track: "Backend", patterns: [/backend/, /back-end/, /back end/, /api/, /server side/, /server-side/, /node\.js/, /express/, /database/] },
-  { track: "Project Management", patterns: [/project management/, /project/, /pm/, /scrum/, /agile/] }
+  { track: "Project Management", patterns: [/project management/, /project/, /\bpm\b/, /scrum/, /agile/] }
 ];
 
 function inferTrackFromMessage(message) {

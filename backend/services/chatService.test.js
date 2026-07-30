@@ -82,6 +82,7 @@ test("a follow-up question with no track keyword still reuses the session's esta
     const second = await svc.generateReply("what does a frontend dev do", sessionId);
     assert.equal(second.payload.track, "Frontend");
     assert.equal(second.payload.starterPackUrl, first.payload.starterPackUrl);
+    assert.equal(second.payload.statusMessage, "Using your current Frontend match.");
     if (first.payload.mentorLink) {
         assert.equal(second.payload.mentorLink, first.payload.mentorLink);
     }
@@ -164,7 +165,7 @@ test("strips literal markdown bold/italic syntax from Gemma's reply text", async
 test("strips the mentor's raw link from prose when it's already shown in the dedicated link box", async () => {
     const svc = createChatService({
         aiClient: mockAiClientDirectResponse(
-            "You can reach out to her directly via WhatsApp to get started: https://wa.me/fake101"
+            "You can reach out to her here (https://wa.me/fake101) and get started."
         ),
         modelName: "x",
         strictGeminiApi: false,
@@ -177,6 +178,7 @@ test("strips the mentor's raw link from prose when it's already shown in the ded
         !result.payload.reply.includes(result.payload.mentorLink),
         "reply text must not repeat the exact same URL already shown in the mentor link box"
     );
+    assert.ok(!result.payload.reply.includes("()"), "reply must not leave empty URL parentheses");
 });
 
 test("strips the raw starter-pack URL from prose when the download card is shown", async () => {
@@ -284,4 +286,205 @@ test("preserves sentence punctuation after removing a duplicate URL", async () =
     );
 
     assert.ok(result.payload.reply.includes("here. You"));
+});
+
+test("greetings and contributor requests bypass Gemma and mentor matching", async () => {
+    let requestCount = 0;
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async () => {
+                    requestCount += 1;
+                    return { text: "This should not be called." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const greeting = await svc.generateReply("hello", "intent-greeting-session");
+    const contributor = await svc.generateReply(
+        "I want to mentor others and share my experience",
+        "intent-contributor-session"
+    );
+
+    assert.equal(requestCount, 0);
+    assert.equal(greeting.payload.reason, "greeting_shortcut");
+    assert.equal(contributor.payload.intent, "contributor");
+    assert.equal(greeting.payload.track, undefined);
+    assert.equal(contributor.payload.track, undefined);
+    assert.equal(greeting.payload.trackOptions, undefined);
+    assert.equal(contributor.payload.trackOptions, undefined);
+    assert.equal(contributor.payload.statusMessage, "Contributor guidance ready.");
+});
+
+test("punctuated greetings and thanks still use direct replies", async () => {
+    let requestCount = 0;
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async () => {
+                    requestCount += 1;
+                    return { text: "This should not be called." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+
+    const greeting = await svc.generateReply("Hi!", "punctuated-greeting-session");
+    const thanks = await svc.generateReply("Thank you!", "punctuated-thanks-session");
+
+    assert.equal(requestCount, 0);
+    assert.equal(greeting.payload.intent, "greeting");
+    assert.equal(thanks.payload.intent, "thanks");
+});
+
+test("an informational track question does not expose or run the mentor tool", async () => {
+    const requests = [];
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async (request) => {
+                    requests.push(request);
+                    return { text: "Frontend focuses on the user-facing part of an application." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: { name: "check_mentor_capacity" }
+    });
+
+    const result = await svc.generateReply(
+        "What does a frontend mentor do?",
+        "informational-track-session"
+    );
+
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].tools, undefined);
+    assert.equal(result.payload.track, undefined);
+    assert.equal(result.payload.reason, "compose_no_context");
+    assert.equal(result.payload.statusMessage, "Response ready.");
+});
+
+test("a clear track request still enables matching and grounds a result", async () => {
+    const requests = [];
+    const tool = { name: "check_mentor_capacity" };
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async (request) => {
+                    requests.push(request);
+                    return { text: "I found a grounded option for you." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: tool
+    });
+
+    const result = await svc.generateReply(
+        "I want to learn backend",
+        "explicit-track-session"
+    );
+
+    assert.deepEqual(requests[0].tools, [tool]);
+    assert.equal(result.payload.track, "Backend");
+    assert.equal(result.payload.intent, "learner");
+    assert.equal(result.payload.decision.decidedBy, "inference_fallback");
+});
+
+test("thanks after a match reuses session context without another model call", async () => {
+    let requestCount = 0;
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async () => {
+                    requestCount += 1;
+                    return { text: "Your learning match is ready." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+    const sessionId = "contextual-thanks-session";
+
+    const match = await svc.generateReply("I want to learn cloud computing", sessionId);
+    const thanks = await svc.generateReply("thank you", sessionId);
+
+    assert.equal(requestCount, 1);
+    assert.equal(thanks.payload.track, match.payload.track);
+    assert.equal(thanks.payload.starterPackUrl, match.payload.starterPackUrl);
+    assert.equal(thanks.payload.reason, "thanks_with_match_shortcut");
+    assert.match(thanks.payload.reply, /Cloud Computing/);
+    assert.equal(thanks.payload.statusMessage, "Current match ready.");
+});
+
+test("a vague follow-up asks about the active match without checking capacity again", async () => {
+    let requestCount = 0;
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async () => {
+                    requestCount += 1;
+                    return { text: "Your match is ready." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+    const sessionId = "contextual-vague-session";
+
+    await svc.generateReply("I want to learn data analytics", sessionId);
+    const followUp = await svc.generateReply("okay", sessionId);
+
+    assert.equal(requestCount, 1);
+    assert.equal(followUp.payload.track, "Data Analytics");
+    assert.equal(followUp.payload.reason, "vague_message_with_match_shortcut");
+    assert.match(followUp.payload.reply, /Data Analytics/);
+});
+
+test("a fallback reply preserves the active session match", async () => {
+    let requestCount = 0;
+    const svc = createChatService({
+        aiClient: {
+            interactions: {
+                create: async () => {
+                    requestCount += 1;
+                    if (requestCount > 1) {
+                        throw new Error("simulated follow-up failure");
+                    }
+                    return { text: "Your backend learning match is ready." };
+                }
+            }
+        },
+        modelName: "x",
+        strictGeminiApi: false,
+        checkMentorCapacityTool: {}
+    });
+    const sessionId = "grounded-fallback-session";
+
+    const match = await svc.generateReply("I want to learn backend", sessionId);
+    const fallback = await svc.generateReply("What should I do next?", sessionId);
+
+    assert.equal(fallback.payload.source, "fallback");
+    assert.equal(fallback.payload.reason, "gemma_request_failed");
+    assert.equal(fallback.payload.track, match.payload.track);
+    assert.equal(fallback.payload.starterPackUrl, match.payload.starterPackUrl);
+    assert.equal(
+        fallback.payload.statusMessage,
+        match.payload.status === "success"
+            ? "Using your current Backend match."
+            : "Using your current Backend learning plan."
+    );
 });

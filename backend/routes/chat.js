@@ -58,7 +58,8 @@ function createChatRouter({
         payload: {
           reply: "Connection error. Please try again.",
           source: "fallback",
-          reason: "stream_failed"
+          reason: "stream_failed",
+          statusMessage: "Unable to prepare a response."
         }
       });
     }

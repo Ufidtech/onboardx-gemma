@@ -27,42 +27,59 @@ function normalizeMessage(message) {
 function isGreeting(message) {
   const text = normalizeMessage(message);
   return (
-    /^hi$/.test(text) ||
-    /^hello$/.test(text) ||
-    /^hey$/.test(text) ||
-    /^good (morning|afternoon|evening)$/.test(text) ||
+    /^(hi|hello|hey)[!.?]*$/.test(text) ||
+    /^good (morning|afternoon|evening)[!.?]*$/.test(text) ||
     /^how are you/.test(text) ||
-    /^what'?s up$/.test(text)
+    /^what'?s up[!.?]*$/.test(text)
   );
 }
 
 function isThanks(message) {
   const text = normalizeMessage(message);
-  return /^thanks?$/.test(text) || /^thank you$/.test(text);
+  return /^(thanks?|thank you)[!.?]*$/.test(text);
 }
 
 function isContributorIntent(message) {
   const text = normalizeMessage(message);
-  return /\b(contribute|contribution|help the community|give back|volunteer|mentor the community|support the community)\b/.test(text);
+  return /\b(contribute|contribution|help (?:the community|others)|give back|volunteer|become a mentor|mentor (?:the community|others|people|members|beginners)|support the community|share my experience)\b/.test(text);
 }
 
 function isVagueMessage(message) {
   const text = normalizeMessage(message);
   return (
     text.length < 4 ||
-    /^(what|how|why|help|more|tell me more|okay|ok)$/i.test(text)
+    /^(what|how|why|help|more|tell me more|okay|ok|hmm+|not sure|unsure)[!.?]*$/i.test(text)
   );
 }
 
-function isTrackOrMentorRequest(message) {
+function hasMentorFlowLanguage(message) {
   const text = normalizeMessage(message);
   return (
-    /\b(mentor|mentorship|track|learning path|roadmap|guidance|availability)\b/.test(text) ||
-    /\b(frontend|backend|cloud computing|cloud|data analytics|ai|machine learning|android|mobile|ui\/ux|cybersecurity|devops|sre|it support|digital marketing|project management)\b/.test(text)
+    /\b(mentor|mentorship|match me|learning track|learning path|roadmap|availability|available|openings?|seats?|spots?)\b/.test(text) ||
+    /\b(?:want|need|learn|study|start|begin|join|take|choose|select|switch|change|pivot|explore|improve|teach|guide|recommend|find|connect|interested|looking|trying|get into)\b/.test(text) ||
+    /\b(?:would like|i'd like|let'?s do|help me (?:with|learn|choose|find))\b/.test(text)
   );
 }
 
-function getDirectReply(message) {
+function isInformationalQuestion(message) {
+  return /^(?:what (?:is|does|are)|how (?:does|is)|tell me about|explain|describe)\b/.test(
+    normalizeMessage(message)
+  );
+}
+
+function isExplicitMentorRequest(message) {
+  const text = normalizeMessage(message);
+  const asksAvailability =
+    /\b(availability|available|openings?|seats?|spots?)\b/.test(text);
+
+  return Boolean(
+    inferTrackFromMessage(message) &&
+    hasMentorFlowLanguage(message) &&
+    (asksAvailability || !isInformationalQuestion(message))
+  );
+}
+
+function getDirectReply(message, session) {
   if (isGreeting(message)) {
     return {
       reply:
@@ -76,6 +93,21 @@ function getDirectReply(message) {
   }
 
   if (isThanks(message)) {
+    if (session.match) {
+      const context = { ...session.match, reused: true };
+      const reply = context.mentor
+        ? `You’re welcome! Your ${context.track} match with ${context.mentor} is still ready whenever you want guidance or your next learning action.`
+        : `You’re welcome! Your ${context.track} starter pack and learning actions are still here whenever you’re ready to continue.`;
+
+      return {
+        ...buildReplyFromContext(context, reply),
+        statusMessage: "Current match ready.",
+        source: "direct",
+        intent: "thanks",
+        reason: "thanks_with_match_shortcut"
+      };
+    }
+
     return {
       reply: "You’re welcome! If you want, I can help you find a track or mentor next.",
       status: "agent",
@@ -87,18 +119,33 @@ function getDirectReply(message) {
   }
 
   if (isContributorIntent(message)) {
+    session.intent = "contributor";
     return {
       reply:
         "That’s great — you can support the community by mentoring others, sharing your experience, or helping members who are just starting out.",
       status: "agent",
-      statusMessage: "Preparing contributor guidance...",
+      statusMessage: "Contributor guidance ready.",
       source: "direct",
-      intent: "contributor_request",
+      intent: "contributor",
       reason: "contributor_shortcut"
     };
   }
 
   if (isVagueMessage(message)) {
+    if (session.match) {
+      const context = { ...session.match, reused: true };
+      return {
+        ...buildReplyFromContext(
+          context,
+          `Are you asking about your ${context.track} match, your mentor guidance, or your next learning action?`
+        ),
+        statusMessage: "Asking about your current match...",
+        source: "direct",
+        intent: session.intent || "learner",
+        reason: "vague_message_with_match_shortcut"
+      };
+    }
+
     return {
       reply:
         "Sure — are you looking for a learning track, a mentor, or a way to contribute to the community?",
@@ -107,6 +154,21 @@ function getDirectReply(message) {
       source: "direct",
       intent: "clarification",
       reason: "vague_message_shortcut"
+    };
+  }
+
+  if (
+    hasMentorFlowLanguage(message) &&
+    !inferTrackFromMessage(message) &&
+    !isInformationalQuestion(message)
+  ) {
+    return {
+      reply: "Which learning track would you like mentor guidance or availability for?",
+      status: "agent",
+      statusMessage: "Asking which track you mean...",
+      source: "direct",
+      intent: "clarification",
+      reason: "mentor_request_missing_track"
     };
   }
 
@@ -148,6 +210,7 @@ function cleanReplyText(text, links = []) {
     stripMarkdownEmphasis(text)
   );
   return cleaned
+    .replace(/\(\s*\)/g, "")
     .replace(/\b(?:at|via)\s+(?=and\b|to\b|[.,;:!?]|$)/gi, "")
     .replace(/ {2,}/g, " ")
     .trim();
@@ -161,11 +224,17 @@ function contradictsGroundedMatch(text) {
   );
 }
 
-function resolveGroundedContext(message, session, explicitTrack, explicitLevel) {
+function resolveGroundedContext(
+  message,
+  session,
+  explicitTrack,
+  explicitLevel,
+  { allowNewMatch = false } = {}
+) {
   const inferredTrack = explicitTrack || inferTrackFromMessage(message);
   const isNewOrPivot = inferredTrack && inferredTrack !== session.track;
 
-  if (isNewOrPivot) {
+  if (isNewOrPivot && allowNewMatch) {
     const level =
       explicitLevel === "intermediate" || explicitLevel === "beginner"
         ? explicitLevel
@@ -191,6 +260,7 @@ function resolveGroundedContext(message, session, explicitTrack, explicitLevel) 
 
     session.track = inferredTrack;
     session.level = learningPath.level;
+    session.intent = "learner";
     session.match = match;
 
     return { ...match, reused: false };
@@ -215,7 +285,9 @@ function buildReplyFromContext(context, textOverride) {
         groundedText ||
         `You’re matched with ${context.mentor} for ${context.track}. Use the mentor link for guidance and start with the learning actions below.`,
       status: "success",
-      statusMessage: "Mentor matched. Preparing your starter pack...",
+      statusMessage: context.reused
+        ? `Using your current ${context.track} match.`
+        : "Mentor matched. Preparing your starter pack...",
       track: context.track,
       level: context.level,
       intent: context.intent || "unknown",
@@ -236,8 +308,9 @@ function buildReplyFromContext(context, textOverride) {
       groundedText ||
       `That track is currently full.${altText} Download the self-guided starter pack below to keep moving, or ask again later when a seat opens.`,
     status: "full",
-    statusMessage:
-      "Track is full. Finding an alternative mentor and preparing your starter pack...",
+    statusMessage: context.reused
+      ? `Using your current ${context.track} learning plan.`
+      : "Track is full. Finding an alternative mentor and preparing your starter pack...",
     track: context.track,
     level: context.level,
     intent: context.intent || "unknown",
@@ -386,7 +459,13 @@ function executeMentorTool(functionCall, message, session) {
   }
 
   const args = functionCall.arguments || {};
-  const context = resolveGroundedContext(message, session, args.track, args.level);
+  const context = resolveGroundedContext(
+    message,
+    session,
+    args.track,
+    args.level,
+    { allowNewMatch: true }
+  );
 
   if (!context) {
     throw new Error("Gemma called check_mentor_capacity without a valid track.");
@@ -424,7 +503,9 @@ function buildFunctionResult(functionCall, context) {
 }
 
 function buildFallbackReply(message, session, reason = "fallback_response") {
-  const context = resolveGroundedContext(message, session);
+  const context = resolveGroundedContext(message, session, null, null, {
+    allowNewMatch: isExplicitMentorRequest(message)
+  });
   if (!context) {
     return {
       reply:
@@ -480,7 +561,7 @@ function createChatService({
   async function generateReplyInner(message, sessionId, requestUsage) {
     const session = getOrCreateSession(sessionId);
 
-    const direct = getDirectReply(message);
+    const direct = getDirectReply(message, session);
     if (direct) {
       return {
         statusCode: 200,
@@ -496,6 +577,7 @@ function createChatService({
           reply: "GEMINI_API_KEY is not configured on the backend.",
           source: "fallback",
           reason: "missing_api_key",
+          statusMessage: "Chat service is not configured.",
           intent: session.intent || "unknown"
         }
       };
@@ -506,7 +588,7 @@ function createChatService({
         model: modelName,
         input: buildAgentInput(message, session),
         system_instruction: buildSystemInstruction(),
-        ...(isTrackOrMentorRequest(message)
+        ...(isExplicitMentorRequest(message)
           ? { tools: [checkMentorCapacityTool] }
           : {}),
         ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
@@ -532,7 +614,9 @@ function createChatService({
 
         addUsage(requestUsage, interaction);
       } else {
-        context = resolveGroundedContext(message, session);
+        context = resolveGroundedContext(message, session, null, null, {
+          allowNewMatch: isExplicitMentorRequest(message)
+        });
 
         if (context) {
           decision = {
@@ -579,6 +663,7 @@ function createChatService({
         payload: {
           reply: replyText,
           status: "agent",
+          statusMessage: "Response ready.",
           intent: session.intent || "unknown",
           week1Actions: [],
           source: "gemini",
@@ -599,6 +684,7 @@ function createChatService({
             code: error?.code || "gemini_error",
             statusCode: error?.statusCode || error?.status || 500,
             source: "gemini_error",
+            statusMessage: "Unable to prepare a response.",
             intent: session.intent || "unknown",
             reason: "strict_mode_error_returned"
           }
@@ -617,10 +703,13 @@ function createChatService({
     totalTokensUsed += requestUsage.totalTokens;
     const tokensLeft =
       tokenBudget != null ? Math.max(tokenBudget - totalTokensUsed, 0) : null;
+    const shouldOfferTrackOptions =
+      !payload.track &&
+      !["greeting", "thanks", "contributor"].includes(payload.intent);
 
     return {
       ...payload,
-      ...(payload.track ? {} : { trackOptions: getTrackOptions() }),
+      ...(shouldOfferTrackOptions ? { trackOptions: getTrackOptions() } : {}),
       usage: {
         requestTokens: requestUsage.totalTokens,
         requestInputTokens: requestUsage.inputTokens,
@@ -643,7 +732,7 @@ function createChatService({
     const requestUsage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
     const session = getOrCreateSession(sessionId);
 
-    const direct = getDirectReply(message);
+    const direct = getDirectReply(message, session);
     if (direct) {
       return finalizePayload(direct, requestUsage);
     }
@@ -654,7 +743,8 @@ function createChatService({
         {
           reply: "GEMINI_API_KEY is not configured on the backend.",
           source: "fallback",
-          reason: "missing_api_key"
+          reason: "missing_api_key",
+          statusMessage: "Chat service is not configured."
         },
         requestUsage
       );
@@ -665,7 +755,7 @@ function createChatService({
         model: modelName,
         input: buildAgentInput(message, session),
         system_instruction: buildSystemInstruction(),
-        ...(isTrackOrMentorRequest(message)
+        ...(isExplicitMentorRequest(message)
           ? { tools: [checkMentorCapacityTool] }
           : {}),
         ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
@@ -691,7 +781,9 @@ function createChatService({
           ...(hasGenerationConfig ? { generation_config: generationConfig } : {})
         });
       } else {
-        context = resolveGroundedContext(message, session);
+        context = resolveGroundedContext(message, session, null, null, {
+          allowNewMatch: isExplicitMentorRequest(message)
+        });
 
         if (context) {
           decision = {
@@ -751,6 +843,8 @@ function createChatService({
         {
           reply: replyText,
           status: "agent",
+          statusMessage: "Response ready.",
+          intent: session.intent || "unknown",
           week1Actions: [],
           source: "gemini",
           reason: "compose_no_context_stream"

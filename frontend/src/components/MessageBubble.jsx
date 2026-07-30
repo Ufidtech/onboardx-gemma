@@ -101,6 +101,11 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
           </div>
         )}
         {renderContent(message.content)}
+        {!isUser && message.statusMessage && (
+          <div className="mt-2 text-xs text-gray-500" role="status">
+            {message.statusMessage}
+          </div>
+        )}
         {!isUser && hasMentorLink && (
           <div className="mt-3 rounded-md border border-[#cfd8dc] bg-[#f8fbfc] p-3">
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -138,7 +143,10 @@ export default function MessageBubble({ message, onSelectTrack, disabled }) {
         {!isUser && hasStarterPack && (
           <div className="mt-3 rounded-md border border-[#cfd8dc] bg-[#f8fbfc] p-3">
             <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Self-guided starter pack (4 weeks)
+              Self-guided starter pack
+              {message.estimatedWeeks
+                ? ` (${message.estimatedWeeks} weeks)`
+                : ""}
             </div>
             <a
               href={message.starterPackUrl}

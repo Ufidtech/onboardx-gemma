@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "./App";
+import { inferLocalIntent } from "./intent";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -21,9 +22,12 @@ describe("App chat flow", () => {
         status: "success",
         source: "gemini",
         reason: "tool_call_success_response_stream",
+        statusMessage: "Mentor matched. Preparing your starter pack...",
         mentor: "Alex",
         mentorLink: "https://wa.me/fake789",
         track: "Backend",
+        estimatedWeeks: 5,
+        starterPackUrl: "/api/resources/starter-pack?track=Backend&level=beginner",
         week1Actions: [
           "Set up your environment and verify the starter app runs.",
           "Complete the first guided exercise with mentor feedback.",
@@ -52,7 +56,7 @@ describe("App chat flow", () => {
 
     render(<App />);
 
-    const input = screen.getByPlaceholderText("Type a message...");
+    const input = screen.getByPlaceholderText("Try frontend, backend, or AI");
     const submitButton = screen.getByRole("button", { name: "➤" });
 
     fireEvent.change(input, { target: { value: "I want backend" } });
@@ -68,6 +72,12 @@ describe("App chat flow", () => {
       screen.getByText("Set up your environment and verify the starter app runs.")
     ).toBeTruthy();
 
+    expect(
+      screen.getByText("Mentor matched. Preparing your starter pack...")
+    ).toBeTruthy();
+
+    expect(screen.getByText("Self-guided starter pack (5 weeks)")).toBeTruthy();
+
     expect(fetchMock).toHaveBeenCalledWith(
       "http://localhost:4000/api/health"
     );
@@ -78,5 +88,20 @@ describe("App chat flow", () => {
         method: "POST",
       })
     );
+  });
+
+  it("uses intent-aware local loading categories", () => {
+    expect(inferLocalIntent("hello")).toBe("greeting");
+    expect(inferLocalIntent("Hi!")).toBe("greeting");
+    expect(inferLocalIntent("thank you")).toBe("thanks");
+    expect(inferLocalIntent("Thanks!")).toBe("thanks");
+    expect(inferLocalIntent("I want to mentor others and share my experience")).toBe(
+      "contributor",
+    );
+    expect(inferLocalIntent("okay")).toBe("clarification");
+    expect(inferLocalIntent("not sure")).toBe("clarification");
+    expect(inferLocalIntent("What is frontend development?")).toBe("unknown");
+    expect(inferLocalIntent("What does a frontend mentor do?")).toBe("unknown");
+    expect(inferLocalIntent("I want to learn frontend")).toBe("learner");
   });
 });

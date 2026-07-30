@@ -3,41 +3,7 @@ import ChatHeader from "./components/ChatHeader";
 import MessageList from "./components/MessageList";
 import ChatInput from "./components/ChatInput";
 import DebugPanel from "./components/DebugPanel";
-
-function inferLocalIntent(message) {
-  const text = String(message || "")
-    .toLowerCase()
-    .trim();
-
-  if (
-    /^(hi|hello|hey|thanks?|thank you|good (morning|afternoon|evening))$/.test(
-      text,
-    )
-  ) {
-    return "greeting";
-  }
-
-  if (
-    /\b(contribute|contribution|help the community|give back|volunteer|mentor the community|support the community)\b/.test(
-      text,
-    )
-  ) {
-    return "contributor";
-  }
-
-  if (
-    /\b(mentor|mentorship|track|learning path|roadmap|guidance|availability)\b/.test(
-      text,
-    ) ||
-    /\b(frontend|backend|cloud computing|cloud|data analytics|ai|machine learning|android|mobile|ui\/ux|cybersecurity|devops|sre|it support|digital marketing|project management)\b/.test(
-      text,
-    )
-  ) {
-    return "learner";
-  }
-
-  return "unknown";
-}
+import { inferLocalIntent } from "./intent";
 
 export default function App() {
   const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
@@ -56,7 +22,7 @@ export default function App() {
     {
       role: "agent",
       content:
-        "Hi! Tell me a bit about what you want to learn, and I'll match you with the right mentor.",
+        "Hi! I can help you choose a learning track, find mentor guidance, or contribute to the community.",
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
@@ -104,6 +70,10 @@ export default function App() {
       setStatusText("Checking mentor availability...");
     } else if (localIntent === "greeting") {
       setStatusText("Preparing a quick reply...");
+    } else if (localIntent === "thanks") {
+      setStatusText("Checking your conversation context...");
+    } else if (localIntent === "clarification") {
+      setStatusText("Preparing a short clarification...");
     } else {
       setStatusText("Thinking...");
     }
@@ -112,11 +82,13 @@ export default function App() {
       role: "agent",
       content: data.reply,
       status: data.status,
+      statusMessage: data.statusMessage,
       source: data.source,
       mentor: data.mentor,
       mentorLink: data.mentorLink,
       track: data.track,
       week1Actions: data.week1Actions,
+      estimatedWeeks: data.estimatedWeeks,
       alternative: data.alternative,
       trackOptions: data.trackOptions,
       starterPackUrl: data.starterPackUrl
@@ -173,7 +145,9 @@ export default function App() {
                   ? "Compiling contributor guidance..."
                   : localIntent === "learner"
                     ? "Preparing your response..."
-                    : "Preparing your response...",
+                    : localIntent === "clarification"
+                      ? "Preparing a clarification..."
+                      : "Preparing your response...",
               );
               setMessages((prev) => [
                 ...prev,
@@ -193,9 +167,14 @@ export default function App() {
             setLastReason(data.reason || "unknown");
             setUsage(data.usage || null);
             setDecision(data.decision || null);
-            setSessionIntent(
-              data.intent || (data.decision?.track ? "learner" : "unknown"),
-            );
+            setSessionIntent((currentIntent) => {
+              if (data.intent === "contributor") return "contributor";
+              if (data.track || data.intent === "learner") return "learner";
+              if (["greeting", "thanks", "clarification"].includes(data.intent)) {
+                return currentIntent;
+              }
+              return data.intent || "unknown";
+            });
 
             setMessages((prev) =>
               streamStarted
