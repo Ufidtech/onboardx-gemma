@@ -125,6 +125,25 @@ Gemma 4 + mentor capacity tool
         └── fail    → deterministic fallback
 ```
 
+## Screenshots
+
+### Home Screen
+<img width="950" height="411" alt="image" src="https://github.com/user-attachments/assets/d3eb2bd2-d392-4460-abe1-c5aef8eb0e2c" />
+
+
+### Learner Match
+<img width="953" height="413" alt="image" src="https://github.com/user-attachments/assets/01b003d2-3128-4da3-bf8f-dd4f597dfc4c" />
+
+
+### Full Track / Alternative Mentor
+<img width="953" height="417" alt="image" src="https://github.com/user-attachments/assets/fe105654-ee6d-43c4-b80f-d0ece35ec7cf" />
+
+
+### Contributor Intent
+<img width="947" height="412" alt="image" src="https://github.com/user-attachments/assets/a683ec79-45ca-465c-9a24-59fc2d2b8b36" />
+
+```
+
 ## Supported tracks
 
 Frontend  
