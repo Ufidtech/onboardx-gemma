@@ -89,23 +89,23 @@ The backend ensures that:
 
 ```text
 Student joins FUT Minna community
-        ↓
+↓
 Needs Frontend guidance
-        ↓
+↓
 Gemma identifies intent
-        ↓
+↓
 Backend checks mentor capacity
-        ↓
+↓
 Mentor available?
-   ├── Yes → Connect mentor
-   └── No  → Recommend alternative mentor
-             + Starter Pack
-             + Personalized roadmap
-        ↓
+├── Yes → Connect mentor
+└── No  → Recommend alternative mentor
+          + Starter Pack
+          + Personalized roadmap
+↓
 Conversation remembered
-        ↓
+↓
 Returns next week
-        ↓
+↓
 Continues learning without starting over
 ```
 
@@ -113,36 +113,31 @@ Continues learning without starting over
 
 ```text
 Frontend (React + Vite)
-        │
-        ▼
+│
+▼
 Express backend
-        │
-        ▼
+│
+▼
 Gemma 4 + mentor capacity tool
-        │
-        ├── success → mentor match
-        ├── full    → alternative track / starter pack
-        └── fail    → deterministic fallback
+│
+├── success → mentor match
+├── full    → alternative track / starter pack
+└── fail    → deterministic fallback
 ```
 
 ## Screenshots
 
 ### Home Screen
-<img width="950" height="411" alt="image" src="https://github.com/user-attachments/assets/d3eb2bd2-d392-4460-abe1-c5aef8eb0e2c" />
-
+<img width="950" height="411" alt="Home Screen" src="https://github.com/user-attachments/assets/d3eb2bd2-d392-4460-abe1-c5aef8eb0e2c" />
 
 ### Learner Match
-<img width="953" height="413" alt="image" src="https://github.com/user-attachments/assets/01b003d2-3128-4da3-bf8f-dd4f597dfc4c" />
-
+<img width="953" height="413" alt="Learner Match" src="https://github.com/user-attachments/assets/01b003d2-3128-4da3-bf8f-dd4f597dfc4c" />
 
 ### Full Track / Alternative Mentor
-<img width="953" height="417" alt="image" src="https://github.com/user-attachments/assets/fe105654-ee6d-43c4-b80f-d0ece35ec7cf" />
-
+<img width="953" height="417" alt="Full Track / Alternative Mentor" src="https://github.com/user-attachments/assets/fe105654-ee6d-43c4-b80f-d0ece35ec7cf" />
 
 ### Contributor Intent
-<img width="947" height="412" alt="image" src="https://github.com/user-attachments/assets/a683ec79-45ca-465c-9a24-59fc2d2b8b36" />
-
-```
+<img width="947" height="412" alt="Contributor Intent" src="https://github.com/user-attachments/assets/a683ec79-45ca-465c-9a24-59fc2d2b8b36" />
 
 ## Supported tracks
 
@@ -197,7 +192,7 @@ Try these in the app:
 
 ## Scalability
 
-While OnboardX is demonstrated using FUT Minna, the same platform can be adapted for GDG on Campus chapters, MLSA communities, AWS Student Buider Group, university innovation hubs, and other African campus tech communities facing the same retention challenge.
+While OnboardX is demonstrated using FUT Minna, the same platform can be adapted for GDG on Campus chapters, MLSA communities, AWS Student Builder Group, university innovation hubs, and other African campus tech communities facing the same retention challenge.
 
 ## Impact
 
@@ -207,10 +202,7 @@ OnboardX helps campus developer communities:
 - provide continuous support between events
 - create clearer pathways from learner to contributor
 - scale community support without requiring mentors to answer repetitive questions
-```
 
-## Future Work
-```markdown
 ## Future Work
 
 - WhatsApp integration
@@ -218,9 +210,11 @@ OnboardX helps campus developer communities:
 - offline Gemma deployment
 - organizer analytics dashboard
 - community health metrics
-```
 
 ## Built With
-You can add this near the top or under the title:
-```markdown
-Built with: Gemma 4 · React · Vite · Express · Native Function Calling
+
+Gemma 4 · React · Vite · Express · Native Function Calling
+
+## Credits
+
+Built by the Gemma Duo Team for the **Build with Gemma: AI for Africa Hackathon — Minna 2026**.
