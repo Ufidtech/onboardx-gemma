@@ -122,9 +122,8 @@ function getDirectReply(message, session) {
     session.intent = "contributor";
     return {
       reply:
-        "That’s great — you can support the community by mentoring others, sharing your experience, or helping members who are just starting out.",
+        "Great — you can support the community by mentoring others, sharing your experience, or helping new members get started. Reach out to the community lead on WhatsApp to learn how you can contribute.",
       status: "agent",
-      statusMessage: "Contributor guidance ready.",
       source: "direct",
       intent: "contributor",
       reason: "contributor_shortcut"
